@@ -1,4 +1,4 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -71,6 +71,7 @@ kotlin {
 
             //kodein https://github.com/kosi-libs/Kodein
             implementation(libs.kodein.di)
+            implementation(libs.kodein.di.compose)
 
             //https://github.com/cashapp/molecule
             implementation(libs.molecule.runtime)
