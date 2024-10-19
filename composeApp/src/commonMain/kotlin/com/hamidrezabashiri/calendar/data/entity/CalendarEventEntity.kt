@@ -1,10 +1,9 @@
-package com.hamidrezabashiri.calendar.data.model
+package com.hamidrezabashiri.calendar.data.entity
 
 import io.realm.kotlin.types.RealmObject
 import io.realm.kotlin.types.annotations.PrimaryKey
-import kotlinx.datetime.LocalDateTime
 
-class CalendarEvent : RealmObject {
+open class CalendarEventEntity : RealmObject {
     @PrimaryKey
     var id: String = ""
     var title: String = ""

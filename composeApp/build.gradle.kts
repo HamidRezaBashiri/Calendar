@@ -31,6 +31,9 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+
+            implementation(libs.koin.android)
+            implementation(libs.koin.androidx.compose)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -70,8 +73,13 @@ kotlin {
             // kmp NativeCoroutines if needed https://github.com/rickclephas/KMP-NativeCoroutines
 
             //kodein https://github.com/kosi-libs/Kodein
-            implementation(libs.kodein.di)
-            implementation(libs.kodein.di.compose)
+//            implementation(libs.kodein.di)
+//            implementation(libs.kodein.di.compose)
+
+            //koin Di
+            api(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
 
             //https://github.com/cashapp/molecule
             implementation(libs.molecule.runtime)
