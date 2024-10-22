@@ -8,12 +8,13 @@ open class CalendarEventEntity : RealmObject {
     var id: String = ""
     var title: String = ""
     var description: String = ""
-    var startDate: String = "" // Store as ISO8601 string
-    var endDate: String = "" // Store as ISO8601 string
-    var isAllDay: Boolean = false
+    var startDate: String = "" // ISO8601 string
+    var endDate: String = "" // ISO8601 string
+    var startTime: String = "" // ISO8601 string for time
+    var endTime: String = "" // ISO8601 string for time
     var location: String = ""
     var isRecurring: Boolean = false
     var isReminderSet: Boolean = false
-    var reminderTimeAndDate: String = "" // Store as ISO8601 string
-
+    var reminderTimeAndDate: String? = null // ISO8601 string
+    var category: String = ""
 }
