@@ -13,6 +13,7 @@ fun CalendarEventEntity.toDomainModel(): CalendarEvent {
     )
 }
 
+
 //fun CalendarEvent.toCalendarEntity(): CalendarEventEntity {
 //    return CalendarEventEntity().apply {
 //        id = this@toCalendarEntity.id

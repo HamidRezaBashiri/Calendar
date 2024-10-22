@@ -1,6 +1,7 @@
 package com.hamidrezabashiri.calendar.di
 
 import com.hamidrezabashiri.calendar.data.repository.EventRepository
+import com.hamidrezabashiri.calendar.data.source.local.RealmDatabase
 import com.hamidrezabashiri.calendar.domain.repository.IEventRepository
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
@@ -14,10 +15,13 @@ val appModule = module {
 //    factoryOf(::HomeViewModel)
 //    factoryOf(::DetailViewModel)
 }
+val dbModule= module {
+    single { RealmDatabase.getInstance() }
+}
 
 fun initKoin() {
     startKoin {
-        modules(appModule)
+        modules(appModule, dbModule)
     }
 }
 
