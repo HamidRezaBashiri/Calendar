@@ -1,51 +1,49 @@
 package com.hamidrezabashiri.calendar.presentation.screens.calendar
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.screen.Screen
-import org.koin.compose.viewmodel.koinViewModel
+import com.hamidrezabashiri.calendar.presentation.screens.base.BaseScreen
 
-class CalendarScreen : Screen {
 
-    @Composable
-    override fun Content() {
-        CalendarScreen()
-    }
-
-    @Composable
-    fun CalendarScreen(
-        viewModel: CalendarViewModel = koinViewModel()
-    ) {
-        val state by viewModel.state.collectAsState()
-
+@Composable
+fun CalendarScreen(
+    viewModel: CalendarViewModel,
+//    onNavigate: (String) -> Unit
+) {
+    BaseScreen(
+        viewModel = viewModel,
+        effectHandler = { effect ->
+            when (effect) {
+                is CalendarContract.Effect.ShowError -> {
+                    // Show error toast
+                }
+                is CalendarContract.Effect.NavigateToEventDetail -> {
+//                    onNavigate(effect.eventId)
+                }
+                CalendarContract.Effect.ShowEventAddedSuccess -> {
+                    // Show success message
+                }
+            }
+        }
+    ) { state, onIntent ->
+        // Your calendar UI here
         Column {
-            // Calendar view
-//            CalendarView(
-//                selectedDate = state.selectedDate,
-//                events = state.events,
-//                onDateSelect = viewModel::onDateSelected
-//            )
-
-            // Events list
-            LazyColumn {
-//                items(state.events) { event ->
-//                    EventItem(
-//                        event = event,
-//                        onDelete = { viewModel.deleteEvent(event.id) }
-//                    )
-//                }
+            if (state.isLoading) {
+                CircularProgressIndicator()
             }
 
-            // Add event bottom sheet
-//            if (state.isAddingEvent) {
-//                AddEventBottomSheet(
-//                    onAddEvent = viewModel::addEvent,
-//                    onDismiss = viewModel::hideAddEventSheet
+            // Calendar content
+            state.events.forEach { event ->
+                Text(event.title)
+//                EventItem(
+//                    event = event,
+//                    onClick = {
+//                        onIntent(CalendarContract.Intent.LoadEvents(event.startDate))
+//                    }
 //                )
-//            }
+            }
         }
     }
 }

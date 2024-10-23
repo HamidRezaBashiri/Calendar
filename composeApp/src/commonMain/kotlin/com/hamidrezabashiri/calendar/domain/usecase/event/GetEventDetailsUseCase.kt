@@ -1,14 +1,14 @@
 package com.hamidrezabashiri.calendar.domain.usecase.event
 
 
-import com.hamidrezabashiri.calendar.domain.model.CalendarEvent
+import com.hamidrezabashiri.calendar.domain.model.CalendarEventModel
 import com.hamidrezabashiri.calendar.domain.repository.CalendarEventRepository
 import com.hamidrezabashiri.calendar.domain.util.Result
 
 class GetEventDetailsUseCase(
     private val repository: CalendarEventRepository
 ) {
-    suspend operator fun invoke(eventId: String): Result<CalendarEvent> {
+    suspend operator fun invoke(eventId: String): Result<CalendarEventModel> {
         return try {
             val event = repository.getEventById(eventId)
             if (event != null) {

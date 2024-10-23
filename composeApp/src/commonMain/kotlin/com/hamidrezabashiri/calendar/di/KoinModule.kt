@@ -14,18 +14,12 @@ import com.hamidrezabashiri.calendar.domain.usecase.event.GetEventDetailsUseCase
 import com.hamidrezabashiri.calendar.domain.usecase.event.GetEventsForDateUseCase
 import com.hamidrezabashiri.calendar.domain.usecase.event.GetEventsForMonthUseCase
 import com.hamidrezabashiri.calendar.domain.usecase.event.UpdateEventUseCase
+import com.hamidrezabashiri.calendar.presentation.screens.calendar.CalendarViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
-val appModule = module {
-//    singleOf(::LocalDataSource)
-//    singleOf(::RemoteDataSource)
-//    singleOf<IEventRepository>(::EventRepository)
-//    factoryOf(::GetUserUseCase)
-//    factoryOf(::HomeViewModel)
-//    factoryOf(::DetailViewModel)
-}
+
 val dataModule = module {
     single { RealmDatabase.getInstance() }
     single<CalendarEventLocalDataSource> { CalendarEventLocalDataSourceImpl(get()) }
@@ -51,9 +45,17 @@ val useCaseModule = module {
         )
     }
 }
+
+val viewModelModule = module {
+    factory {
+        CalendarViewModel(get())
+    }
+    // Add other ViewModels here
+}
+
 fun initKoin() {
     startKoin {
-        modules(appModule, dataModule, useCaseModule)
+        modules( dataModule, useCaseModule,viewModelModule)
     }
 }
 

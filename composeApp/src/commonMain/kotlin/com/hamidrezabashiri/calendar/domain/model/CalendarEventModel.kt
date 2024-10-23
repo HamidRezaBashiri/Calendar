@@ -7,7 +7,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.atTime
 import kotlinx.datetime.toLocalDateTime
 
-data class CalendarEvent(
+data class CalendarEventModel(
     val id: String,
     val title: String,
     val description: String,

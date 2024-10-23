@@ -1,98 +1,89 @@
 package com.hamidrezabashiri.calendar.presentation.screens.calendar
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.hamidrezabashiri.calendar.domain.model.CalendarEvent
+import com.hamidrezabashiri.calendar.domain.model.CalendarEventModel
 import com.hamidrezabashiri.calendar.domain.usecase.CalendarUseCases
-import com.hamidrezabashiri.calendar.domain.util.Result
+import com.hamidrezabashiri.calendar.presentation.screens.base.BaseViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
-
-data class CalendarState(
-    val selectedDate: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
-    val events: List<CalendarEvent> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
+import kotlinx.datetime.toLocalDateTime
 
 class CalendarViewModel(
     private val calendarUseCases: CalendarUseCases
-) : ViewModel() {
-    private val _state = MutableStateFlow(CalendarState())
-    val state = _state.asStateFlow()
+) : BaseViewModel<CalendarContract.State, CalendarContract.Intent, CalendarContract.Effect>() {
+
+    private val _state = MutableStateFlow(CalendarContract.State())
+
+    override val state = produceState(CalendarContract.State()) {
+        _state.value
+    }
+
+    override val effects = MutableSharedFlow<CalendarContract.Effect>()
 
     init {
-        loadEventsForCurrentMonth()
+        loadInitialEvents()
     }
 
-    fun onDateSelected(date: LocalDate) {
+    private fun loadInitialEvents() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(
-                selectedDate = date,
-                isLoading = true
-            )
-
-            calendarUseCases.getEventsForDate(date)
-                .collect { events ->
-                    _state.value = _state.value.copy(
-                        events = events,
-                        isLoading = false
-                    )
-                }
-        }
-    }
-
-    fun addEvent(event: CalendarEvent) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
-
-            when (val result = calendarUseCases.addEvent(event)) {
-                is Result.Success -> {
-                    loadEventsForCurrentMonth()
-                }
-                is Result.Error -> {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        error = result.exception.message
-                    )
-                }
+            try {
+                val currentDate = kotlinx.datetime.Clock.System.now()
+                    .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                    .date
+                loadEvents(currentDate)
+            } catch (e: Exception) {
+                handleError(e)
             }
         }
     }
 
-    private fun loadEventsForCurrentMonth() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
-
-            calendarUseCases.getEventsForMonth(_state.value.selectedDate)
-                .collect { events ->
-                    _state.value = _state.value.copy(
-                        events = events,
-                        isLoading = false
-                    )
-                }
+    override fun handleIntent(intent: CalendarContract.Intent) {
+        when (intent) {
+            is CalendarContract.Intent.LoadEvents -> loadEvents(intent.date)
+            is CalendarContract.Intent.AddEvent -> addEvent(intent.event)
+            is CalendarContract.Intent.RefreshEvents -> loadInitialEvents()
         }
     }
 
-    fun deleteEvent(eventId: String) {
+    private fun loadEvents(date: LocalDate) {
         viewModelScope.launch {
-            when (val result = calendarUseCases.deleteEvent(eventId)) {
-                is Result.Success -> loadEventsForCurrentMonth()
-                is Result.Error -> {
-                    _state.value = _state.value.copy(
-                        error = result.exception.message
-                    )
-                }
+            _state.update { it.copy(isLoading = true) }
+
+            try {
+                val events = calendarUseCases.getEventsForDate(date)
+                    .first() // Convert Flow to List by taking first emission
+
+                _state.update { it.copy(
+                    events = events,
+                    isLoading = false,
+                    error = null
+                ) }
+            } catch (e: Exception) {
+                handleError(e)
             }
         }
     }
 
-    fun clearError() {
-        _state.value = _state.value.copy(error = null)
+    private fun addEvent(event: CalendarEventModel) {
+        viewModelScope.launch {
+            try {
+                calendarUseCases.addEvent(event)
+                effects.emit(CalendarContract.Effect.ShowEventAddedSuccess)
+                loadEvents(event.startDate) // Reload events for the date
+            } catch (e: Exception) {
+                handleError(e)
+            }
+        }
+    }
+
+    private suspend fun handleError(e: Exception) {
+        effects.emit(CalendarContract.Effect.ShowError(e.message ?: "An error occurred"))
+        _state.update { it.copy(
+            isLoading = false,
+            error = e.message
+        ) }
     }
 }

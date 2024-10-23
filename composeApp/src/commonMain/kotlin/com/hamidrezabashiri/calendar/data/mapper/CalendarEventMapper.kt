@@ -1,13 +1,13 @@
 package com.hamidrezabashiri.calendar.data.mapper
 
 import com.hamidrezabashiri.calendar.data.entity.CalendarEventEntity
-import com.hamidrezabashiri.calendar.domain.model.CalendarEvent
+import com.hamidrezabashiri.calendar.domain.model.CalendarEventModel
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 // Extension function to convert CalendarEventEntity to CalendarEvent
-fun CalendarEventEntity.toDomainModel(): CalendarEvent {
-    return CalendarEvent(
+fun CalendarEventEntity.toDomainModel(): CalendarEventModel {
+    return CalendarEventModel(
         id = id,
         title = title,
         description = description,
@@ -24,7 +24,7 @@ fun CalendarEventEntity.toDomainModel(): CalendarEvent {
 }
 
 // Extension function to convert CalendarEvent to CalendarEventEntity
-fun CalendarEvent.toEntity(): CalendarEventEntity {
+fun CalendarEventModel.toEntity(): CalendarEventEntity {
     return CalendarEventEntity().apply {
         id = this@toEntity.id
         title = this@toEntity.title
@@ -42,12 +42,12 @@ fun CalendarEvent.toEntity(): CalendarEventEntity {
 }
 
 // Extension function for List of entities
-fun List<CalendarEventEntity>.toDomainModels(): List<CalendarEvent> = map { it.toDomainModel() }
+fun List<CalendarEventEntity>.toDomainModels(): List<CalendarEventModel> = map { it.toDomainModel() }
 
 // Extension function for List of domain models
-fun List<CalendarEvent>.toEntities(): List<CalendarEventEntity> = map { it.toEntity() }
+fun List<CalendarEventModel>.toEntities(): List<CalendarEventEntity> = map { it.toEntity() }
 
 // Nullable extension functions for safe conversions
-fun CalendarEventEntity?.toDomainModelOrNull(): CalendarEvent? = this?.toDomainModel()
+fun CalendarEventEntity?.toDomainModelOrNull(): CalendarEventModel? = this?.toDomainModel()
 
-fun CalendarEvent?.toEntityOrNull(): CalendarEventEntity? = this?.toEntity()
+fun CalendarEventModel?.toEntityOrNull(): CalendarEventEntity? = this?.toEntity()

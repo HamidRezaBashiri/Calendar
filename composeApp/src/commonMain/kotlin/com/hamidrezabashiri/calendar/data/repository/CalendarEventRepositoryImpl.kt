@@ -4,7 +4,7 @@ import com.hamidrezabashiri.calendar.data.mapper.toDomainModel
 import com.hamidrezabashiri.calendar.data.mapper.toEntity
 import com.hamidrezabashiri.calendar.data.source.local.CalendarEventLocalDataSource
 import com.hamidrezabashiri.calendar.data.source.remote.CalendarEventRemoteDataSource
-import com.hamidrezabashiri.calendar.domain.model.CalendarEvent
+import com.hamidrezabashiri.calendar.domain.model.CalendarEventModel
 import com.hamidrezabashiri.calendar.domain.repository.CalendarEventRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -14,12 +14,12 @@ class CalendarEventRepositoryImpl(
     private val remoteDataSource: CalendarEventRemoteDataSource
 ) : CalendarEventRepository {
 
-    override suspend fun insertEvent(event: CalendarEvent) {
+    override suspend fun insertEvent(event: CalendarEventModel) {
         localDataSource.insertEvent(event.toEntity())
         remoteDataSource.syncUserEvent(event.toEntity())
     }
 
-    override suspend fun updateEvent(event: CalendarEvent) {
+    override suspend fun updateEvent(event: CalendarEventModel) {
         localDataSource.updateEvent(event.toEntity())
         remoteDataSource.syncUserEvent(event.toEntity())
     }
@@ -28,15 +28,15 @@ class CalendarEventRepositoryImpl(
         localDataSource.deleteEvent(eventId)
     }
 
-    override suspend fun getEventById(eventId: String): CalendarEvent? =
+    override suspend fun getEventById(eventId: String): CalendarEventModel? =
         localDataSource.getEventById(eventId)?.toDomainModel()
 
-    override fun getAllEvents(): Flow<List<CalendarEvent>> =
+    override fun getAllEvents(): Flow<List<CalendarEventModel>> =
         localDataSource.getAllEvents().map { events ->
             events.map { it.toDomainModel() }
         }
 
-    override fun getEventsByDate(date: String): Flow<List<CalendarEvent>> =
+    override fun getEventsByDate(date: String): Flow<List<CalendarEventModel>> =
         localDataSource.getEventsByDate(date).map { events ->
             events.map { it.toDomainModel() }
         }
@@ -44,7 +44,7 @@ class CalendarEventRepositoryImpl(
     override fun getEventsForDateRange(
         startDate: String,
         endDate: String
-    ): Flow<List<CalendarEvent>> =
+    ): Flow<List<CalendarEventModel>> =
         localDataSource.getEventsForDateRange(startDate, endDate).map { events ->
             events.map { it.toDomainModel() }
         }
