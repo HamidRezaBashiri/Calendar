@@ -4,14 +4,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import com.hamidrezabashiri.calendar.di.ViewModelProvider
 import com.hamidrezabashiri.calendar.presentation.screens.base.BaseScreen
 
 
 @Composable
 fun CalendarScreen(
-    viewModel: CalendarViewModel,
 //    onNavigate: (String) -> Unit
 ) {
+//    val viewModel = remember { KoinPlatform.getKoin().get<CalendarViewModel>() }
+    val viewModel = ViewModelProvider.provideCalendarViewModel()
+
     BaseScreen(
         viewModel = viewModel,
         effectHandler = { effect ->
@@ -37,6 +40,7 @@ fun CalendarScreen(
             // Calendar content
             state.events.forEach { event ->
                 Text(event.title)
+                Text("Calendar Screen")
 //                EventItem(
 //                    event = event,
 //                    onClick = {

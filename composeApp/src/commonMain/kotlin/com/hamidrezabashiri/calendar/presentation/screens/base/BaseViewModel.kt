@@ -34,7 +34,7 @@ abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiEffect> {
         initialState: S,
         block: @Composable () -> S
     ): StateFlow<S> {
-        return moleculeFlow(RecompositionMode.ContextClock, block)
+        return moleculeFlow(RecompositionMode.Immediate, block)  // Changed this line
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.Lazily,

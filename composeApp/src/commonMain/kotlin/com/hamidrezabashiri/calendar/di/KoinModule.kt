@@ -15,6 +15,8 @@ import com.hamidrezabashiri.calendar.domain.usecase.event.GetEventsForDateUseCas
 import com.hamidrezabashiri.calendar.domain.usecase.event.GetEventsForMonthUseCase
 import com.hamidrezabashiri.calendar.domain.usecase.event.UpdateEventUseCase
 import com.hamidrezabashiri.calendar.presentation.screens.calendar.CalendarViewModel
+import com.hamidrezabashiri.calendar.presentation.screens.library.LibraryViewModel
+import com.hamidrezabashiri.calendar.presentation.screens.settings.SettingViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -47,9 +49,9 @@ val useCaseModule = module {
 }
 
 val viewModelModule = module {
-    factory {
-        CalendarViewModel(get())
-    }
+    factory { CalendarViewModel(get()) }
+    factory { LibraryViewModel() }
+    factory { SettingViewModel() }
     // Add other ViewModels here
 }
 

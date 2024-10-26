@@ -9,6 +9,5 @@ class MyApplication: Application(), KoinComponent {
     override fun onCreate() {
         super.onCreate()
         initKoin()
-
     }
 }

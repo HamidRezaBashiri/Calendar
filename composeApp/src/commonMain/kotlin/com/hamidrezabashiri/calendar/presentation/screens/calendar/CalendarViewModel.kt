@@ -24,7 +24,9 @@ class CalendarViewModel(
     override val effects = MutableSharedFlow<CalendarContract.Effect>()
 
     init {
+        println("CalendarViewModel initialized") // Example log statement
         loadInitialEvents()
+
     }
 
     private fun loadInitialEvents() {
