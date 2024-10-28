@@ -1,45 +1,47 @@
 package com.hamidrezabashiri.calendar.presentation.common.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.SpringSpec
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
+import kotlinx.coroutines.launch
 
 @Composable
 fun MultiPlatformBottomNavBar(
@@ -47,195 +49,236 @@ fun MultiPlatformBottomNavBar(
     tabs: List<Tab>
 ) {
     val tabNavigator = LocalTabNavigator.current
-    var currentTab by remember { mutableStateOf(tabNavigator.current) }
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+
+    var selectedTabIndex by remember { mutableStateOf(1) }
+    val currentTab by remember(selectedTabIndex) {
+        derivedStateOf { tabs.getOrNull(selectedTabIndex) ?: tabs[1] }
+    }
+
+    val navBarState = remember { NavBarState() }
+    val animatedOffset = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        tabNavigator.current = tabs[1]
+        selectedTabIndex = 1
+    }
 
     LaunchedEffect(tabNavigator.current) {
-        currentTab = tabNavigator.current
+        val index = tabs.indexOf(tabNavigator.current)
+        if (index != -1) {
+            selectedTabIndex = index
+        }
     }
-    LaunchedEffect(tabNavigator.current) {
-        currentTab = if (tabs.contains(tabNavigator.current)) tabNavigator.current else tabs.first()
-    }
 
-    val springSpec = SpringSpec<Float>(
-        stiffness = 800f,
-        dampingRatio = 0.8f
-    )
-
-    Surface(
-        color = Color.Transparent,
-        shape = RoundedCornerShape(16.dp),
-        modifier = modifier
-            .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
-            .background(MaterialTheme.colors.primary)
-    ) {
-        BottomNavLayout(
-            selectedIndex = tabs.indexOf(currentTab),
-            itemCount = tabs.size,
-            animSpec = springSpec,
-            indicator = { BottomNavIndicator() }
-        ) {
-            tabs.forEach { tab ->
-                val isSelected = currentTab.options.index == tab.options.index
-                val iconColor by animateColorAsState(
-                    if (isSelected) MaterialTheme.colors.onSurface
-                    else MaterialTheme.colors.onSurface.copy(alpha = 0.5f)
-                )
-
-                NavBarItem(
-                    tab = tab,
-                    isSelected = isSelected,
-                    iconColor = iconColor,
-                    onSelected = {
-                        currentTab = tab
-                        tabNavigator.current = tab
-                    }
+    LaunchedEffect(selectedTabIndex) {
+        if (navBarState.isReady) {
+            val targetOffset = navBarState.calculateTargetOffset(
+                selectedTabIndex,
+                tabs.size
+            )
+            scope.launch {
+                animatedOffset.animateTo(
+                    targetValue = targetOffset,
+                    animationSpec = SpringSpec(
+                        dampingRatio = 0.7f,
+                        stiffness = 300f
+                    )
                 )
             }
+        }
+    }
+
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        FloatingNavButton(
+            currentTab = currentTab,
+            onWidthChanged = { navBarState.floatingButtonWidth = it },
+            offset = animatedOffset.value,
+            density = density
+        )
+
+        BottomNavBar(
+            tabs = tabs,
+            currentTab = currentTab,
+            onNavBarWidthChanged = { navBarState.navBarWidth = it },
+            onTabPositionChanged = { index, position ->
+                navBarState.updateTabPosition(index, position)
+            },
+            onTabSelected = { tab ->
+                selectedTabIndex = tabs.indexOf(tab)
+                tabNavigator.current = tab
+            }
+        )
+    }
+}
+
+@Composable
+private fun FloatingNavButton(
+    currentTab: Tab,
+    onWidthChanged: (Float) -> Unit,
+    offset: Float,
+    density: androidx.compose.ui.unit.Density
+) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colors.primary,
+        elevation = 8.dp,
+        modifier = Modifier
+            .onGloballyPositioned { coordinates ->
+                onWidthChanged(coordinates.size.width.toFloat())
+            }
+            .offset(x = with(density) { offset.toDp() }, y = (-40).dp)
+            .size(64.dp)
+            .zIndex(1f)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                painter = currentTab.options.icon ?: rememberVectorPainter(Icons.Default.Home),
+                contentDescription = currentTab.options.title,
+                tint = MaterialTheme.colors.onPrimary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = currentTab.options.title,
+                style = MaterialTheme.typography.caption,
+                color = MaterialTheme.colors.onPrimary
+            )
         }
     }
 }
 
 @Composable
-private fun BottomNavLayout(
-    selectedIndex: Int,
-    itemCount: Int,
-    animSpec: AnimationSpec<Float>,
-    indicator: @Composable BoxScope.() -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+private fun BottomNavBar(
+    tabs: List<Tab>,
+    currentTab: Tab,
+    onNavBarWidthChanged: (Float) -> Unit,
+    onTabPositionChanged: (Int, Float) -> Unit,
+    onTabSelected: (Tab) -> Unit
 ) {
-    val selectionFractions = remember(itemCount) {
-        List(itemCount) { i ->
-            Animatable(if (i == selectedIndex) 1f else 0f)
-        }
-    }
-
-    selectionFractions.forEachIndexed { index, selectionFraction ->
-        val target = if (index == selectedIndex) 1f else 0f
-        LaunchedEffect(target, animSpec) {
-            selectionFraction.animateTo(target, animSpec)
-        }
-    }
-
-    val indicatorIndex = remember { Animatable(selectedIndex.toFloat()) }
-
-    LaunchedEffect(selectedIndex) {
-        indicatorIndex.animateTo(selectedIndex.toFloat(), animSpec)
-    }
-
-    Layout(
-        modifier = modifier.height(60.dp),
-        content = {
-            content()
-            Box(Modifier.layoutId("indicator"), content = indicator)
-        }
-    ) { measurables, constraints ->
-        val itemCount = measurables.size - 1 // Account for indicator
-        val totalWidth = constraints.maxWidth
-        val itemWidth = totalWidth / itemCount
-
-        val indicatorMeasurable = measurables.first { it.layoutId == "indicator" }
-        val itemPlaceable = measurables
-            .filterNot { it == indicatorMeasurable }
-            .map { measurable ->
-                measurable.measure(
-                    constraints.copy(
-                        minWidth = itemWidth,
-                        maxWidth = itemWidth
+    Surface(
+        color = MaterialTheme.colors.surface,
+//        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        elevation = 8.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { coordinates ->
+                onNavBarWidthChanged(coordinates.size.width.toFloat())
+            }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                ,
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            tabs.forEachIndexed { index, tab ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .onGloballyPositioned { coordinates ->
+                            onTabPositionChanged(index, coordinates.positionInParent().x)
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    NavBarItem(
+                        tab = tab,
+                        isSelected = currentTab.options.index == tab.options.index,
+                        onSelected = { onTabSelected(tab) }
                     )
-                )
-            }
-
-        val indicatorPlaceable = indicatorMeasurable.measure(
-            constraints.copy(
-                minWidth = itemWidth,
-                maxWidth = itemWidth
-            )
-        )
-
-        layout(constraints.maxWidth, itemPlaceable.maxOf { it.height }) {
-            val indicatorLeft = indicatorIndex.value * itemWidth
-            indicatorPlaceable.placeRelative(x = indicatorLeft.toInt(), y = 0)
-
-            var x = 0
-            itemPlaceable.forEach { placeable ->
-                placeable.placeRelative(x = x, y = 0)
-                x += placeable.width
+                }
             }
         }
     }
+}
+
+private class NavBarState {
+    var navBarWidth by mutableStateOf(0f)
+    var floatingButtonWidth by mutableStateOf(0f)
+    private val tabPositions = mutableStateListOf<Float>()
+
+    val isReady: Boolean
+        get() = navBarWidth > 0 && floatingButtonWidth > 0 && tabPositions.isNotEmpty()
+
+    fun updateTabPosition(index: Int, position: Float) {
+        if (tabPositions.size > index) {
+            tabPositions[index] = position
+        } else {
+            tabPositions.add(position)
+        }
+    }
+
+    fun calculateTargetOffset(selectedIndex: Int, totalTabs: Int): Float {
+        // Assuming navBarWidth, horizontalPadding, tabPositions, and floatingButtonWidth are defined in scope
+        val usableWidth = navBarWidth
+        val itemWidth = usableWidth / totalTabs
+
+
+        // Calculate the absolute position of the selected tab considering padding
+        val absolutePosition = (itemWidth * selectedIndex)
+        println("Absolute Position (Tab Start Position): $absolutePosition")
+
+        // Calculate the center of the selected tab
+        val tabCenter = absolutePosition + (itemWidth / 2f)
+
+        // Calculate the center of the navbar
+        val navCenter = navBarWidth / 2f
+
+        // Center-align the floating button with the selected tab
+        val targetOffset = tabCenter - navCenter  // Adjust this line
+
+        return targetOffset
+    }
+
+
+
 }
 
 @Composable
 private fun NavBarItem(
     tab: Tab,
     isSelected: Boolean,
-    iconColor: Color,
     onSelected: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier
+    val contentColor by animateColorAsState(
+        if (isSelected) MaterialTheme.colors.primary.copy(alpha = 0f)
+        else MaterialTheme.colors.onSurface.copy(alpha = 0.5f)
+    )
+
+    Column(
+        modifier = modifier.fillMaxWidth()
             .selectable(
                 selected = isSelected,
                 onClick = onSelected
             )
-            .padding(12.dp),
-        contentAlignment = Alignment.Center
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.animateContentSize()
-        ) {
-            // Icon
-            Icon(
-                imageVector = Icons.Default.Done,
-                contentDescription = tab.options.title,
-                tint = iconColor,
-                modifier = Modifier.size(24.dp)
-            )
-
-            // Show text only when selected
-            if (isSelected) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = tab.options.title,
-                    color = iconColor,
-                    style = MaterialTheme.typography.caption
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun BottomNavIndicator(
-    modifier: Modifier = Modifier
-) {
-    Box(modifier = modifier.fillMaxSize()) {
-        // Background indicator
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp)
-                .background(
-                    MaterialTheme.colors.onSurface.copy(alpha = 0.1f),
-                    RoundedCornerShape(16.dp)
-                )
+        Icon(
+            painter = tab.options.icon ?: rememberVectorPainter(Icons.Default.Home),
+            contentDescription = tab.options.title,
+            tint = contentColor,
+            modifier = Modifier.size(24.dp)
         )
 
-        // Bottom indicator line
-        Spacer(
-            modifier = Modifier
-                .padding(bottom = 2.dp)
-                .align(Alignment.BottomCenter)
-                .height(4.dp)
-                .fillMaxWidth(0.3f)
-                .background(
-                    color = MaterialTheme.colors.onSurface,
-                    shape = RoundedCornerShape(2.dp)
-                )
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = tab.options.title,
+            style = MaterialTheme.typography.caption,
+            color = contentColor
         )
     }
 }

@@ -40,8 +40,8 @@ fun TabNavigationContent() {
             bottomBar = {
                 MultiPlatformBottomNavBar(
                     tabs = listOf(
-                        CalendarTab(),
                         LibraryTab(),
+                        CalendarTab(),
                         SettingsTab()
                     )
                 )

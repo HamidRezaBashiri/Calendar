@@ -3,7 +3,7 @@ package com.hamidrezabashiri.calendar.ui.theme
 import androidx.compose.ui.graphics.Color
 
 object AppColors {
-    val primaryLight = Color(0xFF066B5B)
+    val primaryLight = Color(0xFF00A991)
     val onPrimaryLight = Color(0xFFFFFFFF)
     val primaryContainerLight = Color(0xFFA0F2DE)
     val onPrimaryContainerLight = Color(0xFF00201A)

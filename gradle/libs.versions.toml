@@ -47,7 +47,7 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 permissions = { module = "dev.icerock.moko:permissions", version.ref = "permissions" }
 permissions-compose = { module = "dev.icerock.moko:permissions-compose", version.ref = "permissions" }
-simple-icons = { module = "br.com.devsrsouza.compose.icons:simple-icons", version.ref = "simpleIcons" }
+simple-icons = { module = "br.com.devsrsouza.compose.icons:octicons", version.ref = "simpleIcons" }
 molecule-runtime = { module = "app.cash.molecule:molecule-runtime", version.ref = "moleculeRuntime" }
 
 voyager-navigator = { module = "cafe.adriel.voyager:voyager-navigator", version.ref = "voyager" }
