@@ -1,8 +1,8 @@
 package com.hamidrezabashiri.calendar
 
 
-import androidx.compose.material.BottomNavigation
-import androidx.compose.material.BottomNavigationItem
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
 import androidx.compose.material.Icon
 import androidx.compose.material.NavigationRail
@@ -10,15 +10,14 @@ import androidx.compose.material.NavigationRailItem
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.tab.CurrentTab
-import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabNavigator
+import com.hamidrezabashiri.calendar.presentation.common.components.MultiPlatformBottomNavBar
 import com.hamidrezabashiri.calendar.presentation.navigation.BaseTab
 import com.hamidrezabashiri.calendar.presentation.navigation.tabs.CalendarTab
 import com.hamidrezabashiri.calendar.presentation.navigation.tabs.LibraryTab
@@ -36,35 +35,21 @@ fun App() {
 
 @Composable
 fun TabNavigationContent() {
-    TabNavigator(CalendarTab()) { // Start with CalendarTab
-        val tabNavigator = LocalTabNavigator.current
-
+    TabNavigator(CalendarTab()) { // Explicitly pass the default tab
         Scaffold(
-//            drawerContent = { NavigationRailContent(tabNavigator) },
             bottomBar = {
-                BottomNavigation {
-                    BottomNavigationItem(
-                        icon = { Icon(Icons.Default.DateRange, contentDescription = CalendarTab().options.title) },
-                        label = { Text(CalendarTab().options.title) },
-                        selected = tabNavigator.current == CalendarTab(),
-                        onClick = { tabNavigator.current = CalendarTab() }
+                MultiPlatformBottomNavBar(
+                    tabs = listOf(
+                        CalendarTab(),
+                        LibraryTab(),
+                        SettingsTab()
                     )
-                    BottomNavigationItem(
-                        icon = { Icon(Icons.Default.Place, contentDescription = LibraryTab().options.title) },
-                        label = { Text(LibraryTab().options.title) },
-                        selected = tabNavigator.current == LibraryTab(),
-                        onClick = { tabNavigator.current = LibraryTab() }
-                    )
-                    BottomNavigationItem(
-                        icon = { Icon(Icons.Default.Settings, contentDescription = LibraryTab().options.title) },
-                        label = { Text(SettingsTab().options.title) },
-                        selected = tabNavigator.current == SettingsTab(),
-                        onClick = { tabNavigator.current = SettingsTab() }
-                    )
-                }
+                )
             }
-        ) {
-            CurrentTab()
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                CurrentTab()
+            }
         }
     }
 }

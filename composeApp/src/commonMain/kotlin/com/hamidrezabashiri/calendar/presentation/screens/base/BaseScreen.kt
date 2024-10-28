@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import com.hamidrezabashiri.calendar.util.UiEffect
 import com.hamidrezabashiri.calendar.util.UiIntent
 import com.hamidrezabashiri.calendar.util.UiState
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 
@@ -16,16 +17,32 @@ fun <S : UiState, I : UiIntent, E : UiEffect> BaseScreen(
     effectHandler: (E) -> Unit,
     content: @Composable (state: S, onIntent: (I) -> Unit) -> Unit
 ) {
+    // Collect state with error handling and logging
     val state by viewModel.state.collectAsState()
 
-    // Handle effects
-    LaunchedEffect(Unit) {
-        viewModel.effects.onEach { effect ->
-            effectHandler(effect)
-        }.collect()
+    // Handle effects with error handling
+    LaunchedEffect(viewModel) {
+        viewModel.effects
+            .catch { throwable ->
+                println("Error in effects flow: ${throwable.message}")
+            }
+            .onEach { effect ->
+                try {
+                    effectHandler(effect)
+                } catch (e: Exception) {
+                    println("Error handling effect: ${e.message}")
+                }
+            }
+            .collect()
     }
 
-    content(state) { intent ->
-        viewModel.handleIntent(intent)
-    }
+    // Wrap content in try-catch for debugging
+        content(state) { intent ->
+            try {
+                viewModel.handleIntent(intent)
+            } catch (e: Exception) {
+                println("Error handling intent: ${e.message}")
+            }
+        }
+
 }

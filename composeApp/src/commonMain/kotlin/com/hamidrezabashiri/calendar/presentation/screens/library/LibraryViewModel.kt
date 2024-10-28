@@ -1,35 +1,43 @@
 package com.hamidrezabashiri.calendar.presentation.screens.library
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.hamidrezabashiri.calendar.domain.model.BookModel
 import com.hamidrezabashiri.calendar.presentation.screens.base.BaseViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class LibraryViewModel(
-//    private val calendarUseCases: CalendarUseCases
-) : BaseViewModel<LibraryContract.State, LibraryContract.Intent, LibraryContract.Effect>() {
+class LibraryViewModel : BaseViewModel<LibraryContract.State, LibraryContract.Intent, LibraryContract.Effect>() {
 
-    private val _state = MutableStateFlow(LibraryContract.State())
-
-    override val state = produceState(LibraryContract.State()) {
-        _state.value
-    }
-
-    override val effects = MutableSharedFlow<LibraryContract.Effect>()
+    // Use Compose state to trigger recomposition
+    private var books by mutableStateOf<List<BookModel>>(emptyList())
+    private var isLoading by mutableStateOf(false)
+    private var error by mutableStateOf<String?>(null)
 
     init {
-        println("LibraryViewModel initialized") // Example log statement
+        println("LibraryViewModel initialized")
         loadInitialBooks()
+    }
+
+    override fun getInitialState() = LibraryContract.State(
+        books = emptyList(),
+        isLoading = true,
+        error = null
+    )
+
+    @Composable
+    override fun produceUiState(): LibraryContract.State {
+        return LibraryContract.State(
+            books = books,
+            isLoading = isLoading,
+            error = error
+        )
     }
 
     private fun loadInitialBooks() {
         viewModelScope.launch {
             try {
-//                val currentDate = kotlinx.datetime.Clock.System.now()
-//                    .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
-//                    .date
                 loadBooks()
             } catch (e: Exception) {
                 handleError(e)
@@ -40,34 +48,38 @@ class LibraryViewModel(
     override fun handleIntent(intent: LibraryContract.Intent) {
         when (intent) {
             is LibraryContract.Intent.LoadBooks -> loadBooks()
-            LibraryContract.Intent.RefreshBooks -> TODO()
+            LibraryContract.Intent.RefreshBooks -> loadBooks()
         }
     }
 
     private fun loadBooks() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            isLoading = true
 
             try {
-//                val events = calendarUseCases.getEventsForDate(date)
-//                    .first() // Convert Flow to List by taking first emission
-                val books = listOf(
+                // Simulate network delay
+//                kotlinx.coroutines.delay(1000)
+
+                val loadedBooks = listOf(
                     BookModel(
                         id = 1,
                         title = "Book 1",
                         author = "Author 1",
                         description = "Description 1",
-                    ), BookModel(
+                    ),
+                    BookModel(
                         id = 2,
                         title = "Book 2",
                         author = "Author 2",
                         description = "Description 2",
-                    ), BookModel(
+                    ),
+                    BookModel(
                         id = 3,
                         title = "Book 3",
                         author = "Author 3",
                         description = "Description 3",
-                    ), BookModel(
+                    ),
+                    BookModel(
                         id = 4,
                         title = "Book 4",
                         author = "Author 4",
@@ -75,35 +87,18 @@ class LibraryViewModel(
                     )
                 )
 
-                _state.update {
-                    it.copy(
-                        books = books, isLoading = false, error = null
-                    )
-                }
+                books = loadedBooks // Use assignment to trigger state update
+                error = null
             } catch (e: Exception) {
                 handleError(e)
+            } finally {
+                isLoading = false
             }
         }
     }
 
-    private fun openBookReader(bookId : Int) {
-        viewModelScope.launch {
-            try {
-//                calendarUseCases.addEvent(event)
-//                effects.emit(CalendarContract.Effect.ShowEventAddedSuccess)
-//                loadEvents(event.startDate) // Reload events for the date
-            } catch (e: Exception) {
-                handleError(e)
-            }
-        }
-    }
-
-    private suspend fun handleError(e: Exception) {
-        effects.emit(LibraryContract.Effect.ShowError(e.message ?: "An error occurred"))
-        _state.update {
-            it.copy(
-                isLoading = false, error = e.message
-            )
-        }
+    private fun handleError(e: Exception) {
+        error = e.message
+        emitEffect(LibraryContract.Effect.ShowError(e.message ?: "An error occurred"))
     }
 }
