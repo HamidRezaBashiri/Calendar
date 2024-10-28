@@ -178,7 +178,7 @@ private fun BottomNavBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(80.dp)
-                ,
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -206,7 +206,7 @@ private class NavBarState {
     var navBarWidth by mutableStateOf(0f)
     var floatingButtonWidth by mutableStateOf(0f)
     private val tabPositions = mutableStateListOf<Float>()
-
+    val horizontalPadding = 32f
     val isReady: Boolean
         get() = navBarWidth > 0 && floatingButtonWidth > 0 && tabPositions.isNotEmpty()
 
@@ -219,13 +219,16 @@ private class NavBarState {
     }
 
     fun calculateTargetOffset(selectedIndex: Int, totalTabs: Int): Float {
-        // Assuming navBarWidth, horizontalPadding, tabPositions, and floatingButtonWidth are defined in scope
-        val usableWidth = navBarWidth
+        // Usable width of the nav bar after accounting for horizontal padding
+        val usableWidth = navBarWidth - (horizontalPadding * 2)
+
+        // Width of each tab
         val itemWidth = usableWidth / totalTabs
 
+        // Calculate the absolute position of the selected tab
+        // Adjust the absolute position to consider the starting position
+        val absolutePosition = (itemWidth * selectedIndex) + horizontalPadding
 
-        // Calculate the absolute position of the selected tab considering padding
-        val absolutePosition = (itemWidth * selectedIndex)
         println("Absolute Position (Tab Start Position): $absolutePosition")
 
         // Calculate the center of the selected tab
@@ -235,10 +238,12 @@ private class NavBarState {
         val navCenter = navBarWidth / 2f
 
         // Center-align the floating button with the selected tab
-        val targetOffset = tabCenter - navCenter  // Adjust this line
+        // This calculation effectively offsets the floating button
+        val targetOffset = tabCenter - navCenter
 
         return targetOffset
     }
+
 
 
 
