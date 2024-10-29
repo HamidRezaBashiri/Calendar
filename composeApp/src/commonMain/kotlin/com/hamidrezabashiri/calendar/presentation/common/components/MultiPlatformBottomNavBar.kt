@@ -2,7 +2,10 @@ package com.hamidrezabashiri.calendar.presentation.common.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.SpringSpec
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -48,6 +50,8 @@ fun MultiPlatformBottomNavBar(
     modifier: Modifier = Modifier,
     tabs: List<Tab>
 ) {
+
+
     val tabNavigator = LocalTabNavigator.current
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -58,8 +62,28 @@ fun MultiPlatformBottomNavBar(
     }
 
     val navBarState = remember { NavBarState() }
-    val animatedOffset = remember { Animatable(0f) }
+    val animationProgress = remember { Animatable(0f) }
+    val selectionAnimationProgress = remember { Animatable(0f) }
 
+    // Store initial and target X positions
+    var initialX by remember { mutableStateOf(0f) }
+    var targetX by remember { mutableStateOf(0f) }
+
+    val curveCenterX = remember { Animatable(0f) }
+    LaunchedEffect(selectedTabIndex) {
+        if (navBarState.isReady) {
+            val targetCurveX = navBarState.calculateTargetOffset(selectedTabIndex, tabs.size)
+            launch {
+                curveCenterX.animateTo(
+                    targetValue = targetCurveX,
+                    animationSpec = SpringSpec(
+                        dampingRatio = 1.0f,
+                        stiffness = 600f
+                    )
+                )
+            }
+        }
+    }
     LaunchedEffect(Unit) {
         tabNavigator.current = tabs[1]
         selectedTabIndex = 1
@@ -74,32 +98,74 @@ fun MultiPlatformBottomNavBar(
 
     LaunchedEffect(selectedTabIndex) {
         if (navBarState.isReady) {
-            val targetOffset = navBarState.calculateTargetOffset(
+            // Store current X position as initial
+            initialX = lerp(initialX, targetX, animationProgress.value)
+
+            // Calculate target X position
+            targetX = navBarState.calculateTargetOffset(
                 selectedTabIndex,
                 tabs.size
             )
-            scope.launch {
-                animatedOffset.animateTo(
-                    targetValue = targetOffset,
+
+            // Reset and start the animations
+            launch {
+                // Horizontal movement animation
+                animationProgress.snapTo(0f)
+                animationProgress.animateTo(
+                    targetValue = 1f,
                     animationSpec = SpringSpec(
                         dampingRatio = 0.7f,
                         stiffness = 300f
                     )
                 )
             }
+
+            launch {
+                // Selection bounce animation
+                selectionAnimationProgress.snapTo(0f)
+                selectionAnimationProgress.animateTo(
+                    targetValue = 1f,
+                    animationSpec = SpringSpec(
+                        dampingRatio = 0.5f,
+                        stiffness = 600f
+                    )
+                )
+            }
         }
+    }
+
+    // Calculate current X position based on animation progress
+    val currentX = remember(initialX, targetX, animationProgress.value) {
+        lerp(initialX, targetX, animationProgress.value)
+    }
+
+    // Calculate Y offset with selection bounce effect
+    val currentY = remember(selectionAnimationProgress.value, animationProgress.value) {
+        val baseOffset = -120f  // Base floating height
+        val selectionBounce = 30f // How much it bounces on selection
+
+        // Selection bounce effect (down-then-up)
+        val bounceOffset = when {
+            selectionAnimationProgress.value < 0.5f -> {
+                // Going down (0 to 0.5)
+                val bounceProgress = selectionAnimationProgress.value * 2
+                selectionBounce * kotlin.math.sin(bounceProgress * kotlin.math.PI.toFloat())
+            }
+            else -> {
+                // Going up (0.5 to 1.0)
+                val bounceProgress = (selectionAnimationProgress.value - 0.5f) * 2
+                selectionBounce * (1 - bounceProgress)
+            }
+        }
+
+        // Combine base offset with bounce effect
+        baseOffset + bounceOffset
     }
 
     Box(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.BottomCenter
     ) {
-        FloatingNavButton(
-            currentTab = currentTab,
-            onWidthChanged = { navBarState.floatingButtonWidth = it },
-            offset = animatedOffset.value,
-            density = density
-        )
 
         BottomNavBar(
             tabs = tabs,
@@ -111,48 +177,16 @@ fun MultiPlatformBottomNavBar(
             onTabSelected = { tab ->
                 selectedTabIndex = tabs.indexOf(tab)
                 tabNavigator.current = tab
-            }
+            },
+            curveCenterX=curveCenterX
         )
-    }
-}
-
-@Composable
-private fun FloatingNavButton(
-    currentTab: Tab,
-    onWidthChanged: (Float) -> Unit,
-    offset: Float,
-    density: androidx.compose.ui.unit.Density
-) {
-    Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colors.primary,
-        elevation = 8.dp,
-        modifier = Modifier
-            .onGloballyPositioned { coordinates ->
-                onWidthChanged(coordinates.size.width.toFloat())
-            }
-            .offset(x = with(density) { offset.toDp() }, y = (-40).dp)
-            .size(64.dp)
-            .zIndex(1f)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                painter = currentTab.options.icon ?: rememberVectorPainter(Icons.Default.Home),
-                contentDescription = currentTab.options.title,
-                tint = MaterialTheme.colors.onPrimary,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = currentTab.options.title,
-                style = MaterialTheme.typography.caption,
-                color = MaterialTheme.colors.onPrimary
-            )
-        }
+        FloatingNavButton(
+            currentTab = currentTab,
+            onWidthChanged = { navBarState.floatingButtonWidth = it },
+            offsetX = currentX,
+            offsetY = currentY,
+            density = density
+        )
     }
 }
 
@@ -162,11 +196,13 @@ private fun BottomNavBar(
     currentTab: Tab,
     onNavBarWidthChanged: (Float) -> Unit,
     onTabPositionChanged: (Int, Float) -> Unit,
-    onTabSelected: (Tab) -> Unit
+    onTabSelected: (Tab) -> Unit,
+    curveCenterX: Animatable<Float, AnimationVector1D>,
 ) {
+
     Surface(
         color = MaterialTheme.colors.surface,
-//        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        shape = InwardCurveShape(curveWidth = 80.dp, curveDepth = 90.dp,curveCenterX.value),
         elevation = 8.dp,
         modifier = Modifier
             .fillMaxWidth()
@@ -202,52 +238,50 @@ private fun BottomNavBar(
     }
 }
 
-private class NavBarState {
-    var navBarWidth by mutableStateOf(0f)
-    var floatingButtonWidth by mutableStateOf(0f)
-    private val tabPositions = mutableStateListOf<Float>()
-    val horizontalPadding = 32f
-    val isReady: Boolean
-        get() = navBarWidth > 0 && floatingButtonWidth > 0 && tabPositions.isNotEmpty()
-
-    fun updateTabPosition(index: Int, position: Float) {
-        if (tabPositions.size > index) {
-            tabPositions[index] = position
-        } else {
-            tabPositions.add(position)
+@Composable
+private fun FloatingNavButton(
+    currentTab: Tab,
+    onWidthChanged: (Float) -> Unit,
+    offsetX: Float,
+    offsetY: Float,
+    density: androidx.compose.ui.unit.Density
+) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colors.primary,
+        elevation = 8.dp,
+        modifier = Modifier
+            .onGloballyPositioned { coordinates ->
+                onWidthChanged(coordinates.size.width.toFloat())
+            }
+            .offset(
+                x = with(density) { offsetX.toDp() },
+                y = with(density) { offsetY.toDp() }  // Convert Y offset to Dp
+            )
+            .size(64.dp)
+            .zIndex(1f)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                painter = currentTab.options.icon ?: rememberVectorPainter(Icons.Default.Home),
+                contentDescription = currentTab.options.title,
+                tint = MaterialTheme.colors.onPrimary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = currentTab.options.title,
+                style = MaterialTheme.typography.caption,
+                color = MaterialTheme.colors.onPrimary
+            )
         }
     }
-
-    fun calculateTargetOffset(selectedIndex: Int, totalTabs: Int): Float {
-        // Usable width of the nav bar after accounting for horizontal padding
-        val usableWidth = navBarWidth - (horizontalPadding * 2)
-
-        // Width of each tab
-        val itemWidth = usableWidth / totalTabs
-
-        // Calculate the absolute position of the selected tab
-        // Adjust the absolute position to consider the starting position
-        val absolutePosition = (itemWidth * selectedIndex) + horizontalPadding
-
-        println("Absolute Position (Tab Start Position): $absolutePosition")
-
-        // Calculate the center of the selected tab
-        val tabCenter = absolutePosition + (itemWidth / 2f)
-
-        // Calculate the center of the navbar
-        val navCenter = navBarWidth / 2f
-
-        // Center-align the floating button with the selected tab
-        // This calculation effectively offsets the floating button
-        val targetOffset = tabCenter - navCenter
-
-        return targetOffset
-    }
-
-
-
-
 }
+
 
 @Composable
 private fun NavBarItem(
@@ -263,9 +297,10 @@ private fun NavBarItem(
 
     Column(
         modifier = modifier.fillMaxWidth()
-            .selectable(
-                selected = isSelected,
-                onClick = onSelected
+            .clickable(
+                onClick = onSelected,
+                indication = null,  // Removes the ripple effect
+                interactionSource = remember { MutableInteractionSource() }
             )
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -286,4 +321,35 @@ private fun NavBarItem(
             color = contentColor
         )
     }
+}
+
+private class NavBarState {
+    var navBarWidth by mutableStateOf(0f)
+    var floatingButtonWidth by mutableStateOf(0f)
+    private val tabPositions = mutableStateListOf<Float>()
+    val horizontalPadding = 32f
+    val isReady: Boolean
+        get() = navBarWidth > 0 && floatingButtonWidth > 0 && tabPositions.isNotEmpty()
+
+    fun updateTabPosition(index: Int, position: Float) {
+        if (tabPositions.size > index) {
+            tabPositions[index] = position
+        } else {
+            tabPositions.add(position)
+        }
+    }
+
+    fun calculateTargetOffset(selectedIndex: Int, totalTabs: Int): Float {
+        val usableWidth = navBarWidth - (horizontalPadding * 2)
+        val itemWidth = usableWidth / totalTabs
+        val absolutePosition = (itemWidth * selectedIndex) + horizontalPadding
+        val tabCenter = absolutePosition + (itemWidth / 2f)
+        val navCenter = navBarWidth / 2f
+        return tabCenter - navCenter
+    }
+}
+
+// Helper function for linear interpolation
+private fun lerp(start: Float, end: Float, fraction: Float): Float {
+    return start + (end - start) * fraction
 }
