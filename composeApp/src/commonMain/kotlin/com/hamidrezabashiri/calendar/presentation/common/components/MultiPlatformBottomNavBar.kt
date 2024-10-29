@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.SpringSpec
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +36,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
@@ -142,7 +145,7 @@ fun MultiPlatformBottomNavBar(
     // Calculate Y offset with selection bounce effect
     val currentY = remember(selectionAnimationProgress.value, animationProgress.value) {
         val baseOffset = -120f  // Base floating height
-        val selectionBounce = 30f // How much it bounces on selection
+        val selectionBounce = 20f // How much it bounces on selection
 
         // Selection bounce effect (down-then-up)
         val bounceOffset = when {
@@ -163,7 +166,20 @@ fun MultiPlatformBottomNavBar(
     }
 
     Box(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth()
+            .height(120.dp)
+            .offset()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        Color.Black.copy(alpha = 0.09f),
+                        Color.Black.copy(alpha = 0.1f)
+                    ),
+                    startY = 0f,
+                    endY = Float.POSITIVE_INFINITY
+                )
+            ),
         contentAlignment = Alignment.BottomCenter
     ) {
 
