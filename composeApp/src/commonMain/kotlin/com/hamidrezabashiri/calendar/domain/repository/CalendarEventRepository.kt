@@ -12,4 +12,5 @@ interface CalendarEventRepository {
     fun getEventsByDate(date: String): Flow<List<CalendarEventModel>>
     fun getEventsForDateRange(startDate: String, endDate: String): Flow<List<CalendarEventModel>>
     suspend fun syncWithRemote(countryCode: String)
+    suspend fun fetchHolidaysFromRemote(countryCode: String, year: Int)
 }

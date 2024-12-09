@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hamidrezabashiri.calendar.di.ViewModelProvider
 import com.hamidrezabashiri.calendar.domain.model.CalendarEventModel
+import com.hamidrezabashiri.calendar.presentation.screens.addEvent.EventDetailsForm
 import com.hamidrezabashiri.calendar.presentation.screens.base.BaseScreen
 import com.hamidrezabashiri.calendar.util.CalendarConstants.INITIAL_PAGE_INDEX
 import com.hamidrezabashiri.calendar.util.CalendarConstants.MAX_PAGES
@@ -57,6 +58,8 @@ import kotlinx.datetime.todayIn
 @Composable
 fun CalendarScreen() {
     val viewModel = ViewModelProvider.provideCalendarViewModel()
+    val coroutineScope = rememberCoroutineScope()
+    var showBottomSheet by remember { mutableStateOf(false) }
 
     BaseScreen(viewModel = viewModel, effectHandler = { effect ->
         when (effect) {
@@ -70,16 +73,65 @@ fun CalendarScreen() {
 
             CalendarContract.Effect.ShowEventAddedSuccess -> {
                 println("Event added successfully")
+                viewModel.handleIntent(CalendarContract.Intent.LoadEvents(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date))
             }
         }
     }) { state, onIntent ->
-        CalendarContent(state = state, onDateSelect = { date ->
-            // onIntent(CalendarContract.Intent.SelectDate(date))
-        }, onEventClick = { eventId ->
-            // onIntent(CalendarContract.Intent.NavigateToEvent(eventId))
-        }, onRefresh = {
-            onIntent(CalendarContract.Intent.RefreshEvents)
-        })
+        Box(Modifier.fillMaxSize()) {
+            CalendarContent(state = state, onDateSelect = { date ->
+                // onIntent(CalendarContract.Intent.SelectDate(date))
+            }, onEventClick = { eventId ->
+                // onIntent(CalendarContract.Intent.NavigateToEvent(eventId))
+            }, onRefresh = {
+                onIntent(CalendarContract.Intent.RefreshEvents)
+            })
+
+            // Floating Action Button for adding an event
+//            FloatingActionButton(
+//                onClick = {
+//                    showBottomSheet = true
+//
+//                },
+//                modifier = Modifier
+//                    .align(Alignment.BottomEnd)
+//                    .padding(16.dp),
+//                content = {
+//                    Icon(
+//                        imageVector = Icons.Filled.Add,
+//                        contentDescription = "Add Event"
+//                    )
+//                }
+//            )
+
+            if (showBottomSheet) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .clickable(onClick = {
+                            showBottomSheet = false
+                        }) // Dismiss on outside click
+                ) {
+                    EventDetailsForm(
+                        event = state.event, // Access the event object from the state
+                        onEventChange = { updatedEvent ->
+                            onIntent(CalendarContract.Intent.UpdateEventForEditing(updatedEvent))
+                        },
+                        onSave = {
+                            coroutineScope.launch {
+                                // Handle save: hide the bottom sheet and trigger AddEvent intent
+                                showBottomSheet = false
+                                viewModel.handleIntent(CalendarContract.Intent.AddEvent(state.event))
+                            }
+                        },
+                        onCancel = {
+                            showBottomSheet = false // Close the bottom sheet without saving
+                        }
+                    )
+                }
+            }
+
+        }
     }
 }
 
@@ -150,8 +202,7 @@ private fun CalendarContent(
                             }
 
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "$month",
+                                Text(text = "$month",
                                     style = MaterialTheme.typography.h6,
                                     color = colors.onSurface
                                 )
@@ -316,11 +367,9 @@ private fun EventItem(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(text = event.title)
-            Text(text = "Start: ${event.startDate}")
-            Text(text = "End: ${event.endDate}")
-            event.description?.let { description ->
-                Text(text = description)
-            }
+            Text(text = "Date: ${event.startDate}")
+            Text(text = event.category)
+            Text(text = event.description)
         }
     }
 }

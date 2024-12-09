@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import com.hamidrezabashiri.calendar.domain.model.CalendarEventModel
 import com.hamidrezabashiri.calendar.domain.usecase.CalendarUseCases
 import com.hamidrezabashiri.calendar.presentation.screens.base.BaseViewModel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
@@ -68,17 +67,38 @@ class CalendarViewModel(
 //                selectedDate = intent.date
 //                loadEvents(intent.date)
 //            }
+                is CalendarContract.Intent.UpdateEventForEditing -> updateEvent(intent.event)
+            }
+        }
+    }
+
+    private fun updateEvent(event: CalendarEventModel) {
+        viewModelScope.launch {
+            try {
+            // Update the state by creating a new instance with the updated event details
+            updateState { currentState ->
+                currentState.copy(
+                    event = event // Set the updated event in the state
+                )
+            }
+            } catch (e: Exception) {
+                handleError(e)
             }
         }
     }
 
     private fun loadEvents(date: LocalDate) {
         viewModelScope.launch {
-            isLoading = true
+           isLoading = true
 
             try {
-                val loadedEvents = calendarUseCases.getEventsForDate(date).first()
-                events = loadedEvents.toMutableList()
+                calendarUseCases.getEventsForMonth(date).collect { loadedEvents ->
+                    updateState { currentState ->
+                        currentState.copy(
+                            events = loadedEvents // Set all events in the state
+                        )
+                    }
+                 }
                 error = null
             } catch (e: Exception) {
                 handleError(e)

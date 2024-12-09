@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.realm)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -34,6 +35,8 @@ kotlin {
             implementation(libs.core.splashscreen)
             implementation(libs.koin.android)
             implementation(libs.koin.androidx.compose)
+
+            implementation(libs.ktor.client.okhttp)
 
         }
         commonMain.dependencies {
@@ -94,7 +97,13 @@ kotlin {
             //https://github.com/WojciechOsak/Calendar
             implementation(libs.calendar)
 
+            implementation(libs.bundles.ktor)
 
+
+        }
+        // iOS-specific dependencies (if applicable)
+        nativeMain.dependencies {
+            implementation(libs.ktor.client.darwin)
         }
     }
 }
