@@ -40,13 +40,14 @@ class CalendarViewModel(
             events = events,
             isLoading = isLoading,
             error = error,
-//            selectedDate = selectedDate
+            selectedDate = selectedDate
         )
     }
 
     private fun loadInitialEvents() {
         viewModelScope.launch {
             try {
+                fetchHolidays(selectedDate.year)
                 loadEvents(selectedDate)
             } catch (e: Exception) {
                 handleError(e)
@@ -55,20 +56,29 @@ class CalendarViewModel(
     }
 
     override fun handleIntent(intent: CalendarContract.Intent) {
-        viewModelScope.launch {
-            when (intent) {
-                is CalendarContract.Intent.LoadEvents -> {
-                    selectedDate = intent.date
+        when (intent) {
+            is CalendarContract.Intent.SelectDate -> {
+                // Update UI state immediately
+                selectedDate = intent.date
+                updateState { currentState ->
+                    currentState.copy(
+                        selectedDate = intent.date
+                    )
+                }
+                // Load events in a separate coroutine
+                viewModelScope.launch {
                     loadEvents(intent.date)
                 }
-                is CalendarContract.Intent.AddEvent -> addEvent(intent.event)
-                is CalendarContract.Intent.RefreshEvents -> loadEvents(selectedDate)
-//            is CalendarContract.Intent.SelectDate -> {
-//                selectedDate = intent.date
-//                loadEvents(intent.date)
-//            }
-                is CalendarContract.Intent.UpdateEventForEditing -> updateEvent(intent.event)
             }
+            is CalendarContract.Intent.LoadEvents -> {
+                loadEvents(intent.date)
+            }
+            is CalendarContract.Intent.FetchHolidays -> {
+                fetchHolidays(intent.year)
+            }
+            is CalendarContract.Intent.AddEvent -> addEvent(intent.event)
+            is CalendarContract.Intent.RefreshEvents -> loadEvents(selectedDate)
+            is CalendarContract.Intent.UpdateEventForEditing -> updateEvent(intent.event)
         }
     }
 
@@ -89,21 +99,21 @@ class CalendarViewModel(
 
     private fun loadEvents(date: LocalDate) {
         viewModelScope.launch {
-           isLoading = true
-
+            isLoading = true  // Set loading state immediately
             try {
                 calendarUseCases.getEventsForMonth(date).collect { loadedEvents ->
+                    events = loadedEvents.toMutableList()  // Update backing field
                     updateState { currentState ->
                         currentState.copy(
-                            events = loadedEvents // Set all events in the state
+                            events = loadedEvents,
+                            isLoading = false  // Reset loading state after update
                         )
                     }
-                 }
+                }
                 error = null
             } catch (e: Exception) {
                 handleError(e)
-            } finally {
-                isLoading = false
+                isLoading = false  // Reset loading state on error
             }
         }
     }
@@ -114,6 +124,16 @@ class CalendarViewModel(
                 calendarUseCases.addEvent(event)
                 emitEffect(CalendarContract.Effect.ShowEventAddedSuccess)
                 loadEvents(event.startDate)
+            } catch (e: Exception) {
+                handleError(e)
+            }
+        }
+    }
+
+    private fun fetchHolidays(year: Int) {
+        viewModelScope.launch {
+            try {
+                calendarUseCases.fetchHolidaysFromNetworkUseCase.execute("TJ", year)
             } catch (e: Exception) {
                 handleError(e)
             }

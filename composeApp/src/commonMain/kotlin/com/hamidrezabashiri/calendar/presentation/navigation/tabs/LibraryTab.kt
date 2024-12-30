@@ -20,6 +20,8 @@ class LibraryTab : BaseTab() {
 
     @Composable
     override fun Content() {
+        println("LibraryTab Content called") // Add logging
+
         LibraryScreen()
     }
 }

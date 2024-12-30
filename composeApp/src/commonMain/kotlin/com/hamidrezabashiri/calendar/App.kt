@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import com.hamidrezabashiri.calendar.presentation.common.components.MultiPlatformBottomNavBar
@@ -29,10 +31,15 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Preview
 fun App() {
     AppTheme {
-        TabNavigationContent()
+        Navigator(TabNavigationScreen())
     }
 }
-
+class TabNavigationScreen : Screen {
+    @Composable
+    override fun Content() {
+        TabNavigationContent() // TabNavigator is now a screen in the root Navigator
+    }
+}
 @Composable
 fun TabNavigationContent() {
     TabNavigator(CalendarTab()) { // Explicitly pass the default tab

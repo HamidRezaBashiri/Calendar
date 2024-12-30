@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,10 +51,11 @@ import io.wojciechosak.calendar.view.CalendarView
 import io.wojciechosak.calendar.view.HorizontalCalendarView
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.datetime.todayIn
 
 @Composable
 fun CalendarScreen() {
@@ -78,13 +80,13 @@ fun CalendarScreen() {
         }
     }) { state, onIntent ->
         Box(Modifier.fillMaxSize()) {
-            CalendarContent(state = state, onDateSelect = { date ->
-                // onIntent(CalendarContract.Intent.SelectDate(date))
-            }, onEventClick = { eventId ->
-                // onIntent(CalendarContract.Intent.NavigateToEvent(eventId))
-            }, onRefresh = {
-                onIntent(CalendarContract.Intent.RefreshEvents)
-            })
+            CalendarContent(
+                state = state,
+                onDateSelect = { date -> },
+                onEventClick = { eventId -> },
+                onRefresh = { onIntent(CalendarContract.Intent.RefreshEvents)},
+                onIntent = onIntent
+            )
 
             // Floating Action Button for adding an event
 //            FloatingActionButton(
@@ -141,11 +143,24 @@ private fun CalendarContent(
     state: CalendarContract.State,
     onDateSelect: (LocalDate) -> Unit,
     onEventClick: (String) -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onIntent: (CalendarContract.Intent) -> Unit
 ) {
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
     val currentDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     val pagerState = rememberPagerState(initialPage = INITIAL_PAGE_INDEX, pageCount = { MAX_PAGES })
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(pagerState.currentPage) {
+        scope.launch {  // Use a coroutine for heavy work
+            val monthOffset = pagerState.currentPage - INITIAL_PAGE_INDEX
+            val newDate = currentDate.plus(DatePeriod(months = monthOffset))
+            
+            onIntent(CalendarContract.Intent.LoadEvents(newDate))
+            
+            if (newDate.year != currentDate.year) {
+                onIntent(CalendarContract.Intent.FetchHolidays(newDate.year))
+            }
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -161,14 +176,14 @@ private fun CalendarContent(
                 calendarView = { monthOffset ->
 
                     CalendarView(modifier = Modifier.fillMaxSize(), day = { dayState ->
-                        CustomCalendarDay(state = dayState,
-                            selectedDate = selectedDate,
+                        CustomCalendarDay(
+                            state = dayState,
+                            selectedDate = state.selectedDate,
+                            events = state.events,
                             onDateSelected = { date ->
-                                selectedDate = if (selectedDate == date) {
-                                    null
-                                } else date
-                                onDateSelect(date)
-                            })
+                                onIntent(CalendarContract.Intent.SelectDate(date))
+                            }
+                        )
                     }, config = rememberCalendarState(
                         startDate = currentDate, monthOffset = monthOffset
                     ), header = { month, year ->
@@ -278,66 +293,67 @@ private fun CalendarContent(
 
 @Composable
 fun CustomCalendarDay(
-    state: DayState, selectedDate: LocalDate?, onDateSelected: (LocalDate) -> Unit
+    state: DayState,
+    selectedDate: LocalDate?,
+    events: List<CalendarEventModel>,
+    onDateSelected: (LocalDate) -> Unit
 ) {
-    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-    val isToday = state.date == today
-    val isSelected = selectedDate == state.date
-    val isOutsideMonth = state.isForNextMonth || state.isForPreviousMonth
-
-
-    val backgroundColor = when {
-        isSelected -> colors.primary
-        isToday -> if (colors.isLight) {
-            colors.primary.copy(alpha = 0.1f)
-        } else {
-            colors.primary.copy(alpha = 0.2f)
-        }
-
-        else -> Color.Transparent
-    }
-
-    val textColor = when {
-        isSelected -> Color.White
-        isToday -> colors.primary
-        isOutsideMonth -> if (colors.isLight) {
-            Color(0xFF9AA0A6).copy(alpha = 0.5f)
-        } else {
-            Color.White.copy(alpha = 0.5f)
-        }
-
-        else -> if (colors.isLight) {
-            Color(0xFF3C4043)
-        } else {
-            Color.White.copy(alpha = 0.87f)
-        }
-    }
+    var isInteractionEnabled by remember { mutableStateOf(true) }
+    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    val hasEvents = events.any { it.startDate == state.date }
 
     Box(
-        modifier = Modifier.padding(2.dp).size(44.dp).clip(CircleShape).background(backgroundColor)
-            .then(
-                if (isToday && !isSelected) {
-                    Modifier.background(
-                        color = if (colors.isLight) {
-                            colors.primary.copy(alpha = 0.1f)
-                        } else {
-                            colors.primary.copy(alpha = 0.2f)
-                        }, shape = CircleShape
-                    )
-                } else Modifier
-            ).clickable(enabled = state.enabled, onClick = { onDateSelected(state.date) }),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = state.date.dayOfMonth.toString(),
-            color = textColor,
-            style = MaterialTheme.typography.body1.copy(
-                fontWeight = when {
-                    isSelected || isToday -> FontWeight.Medium
-                    else -> FontWeight.Normal
+        modifier = Modifier
+            .size(46.dp)
+            .clip(CircleShape)
+            .clickable(
+                enabled = isInteractionEnabled,
+                onClick = {
+                    isInteractionEnabled = false
+                    onDateSelected(state.date)
                 }
             )
-        )
+            .background(
+                when {
+                    selectedDate == state.date -> colors.primary
+                    state.date == today -> colors.primary.copy(alpha = 0.2f)
+                    else -> Color.Transparent
+                }
+            )
+            .padding(2.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = state.date.dayOfMonth.toString(),
+                color = when {
+                    selectedDate == state.date -> Color.White
+                    state.date == today -> colors.primary
+                    state.isForNextMonth || state.isForPreviousMonth -> 
+                        colors.onSurface.copy(alpha = 0.5f)
+                    else -> colors.onSurface
+                },
+                style = MaterialTheme.typography.body1.copy(
+                    fontWeight = when {
+                        selectedDate == state.date -> FontWeight.Medium
+                        state.date == today -> FontWeight.Medium
+                        else -> FontWeight.Normal
+                    }
+                )
+            )
+            
+            if (hasEvents) {
+                Box(
+                    modifier = Modifier
+                        .size(4.dp)
+                        .clip(CircleShape)
+                        .background(Color.Green.copy(alpha = 0.8f))
+                )
+            }
+        }
     }
 }
 

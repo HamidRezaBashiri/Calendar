@@ -20,6 +20,7 @@ kotlinxCoroutinesCore = "1.9.0"
 kotlinxDatetime = "0.6.1"
 ktor = "2.3.12"
 moleculeRuntime = "2.0.0"
+pdfViewer = "2.1.1"
 permissions = "0.17.0"
 simpleIcons = "1.1.1"
 voyager = "1.1.0-beta02"
@@ -55,6 +56,7 @@ ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "k
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
 
+pdf-viewer = { module = "io.github.afreakyelf:Pdf-Viewer", version.ref = "pdfViewer" }
 permissions = { module = "dev.icerock.moko:permissions", version.ref = "permissions" }
 permissions-compose = { module = "dev.icerock.moko:permissions-compose", version.ref = "permissions" }
 simple-icons = { module = "br.com.devsrsouza.compose.icons:octicons", version.ref = "simpleIcons" }

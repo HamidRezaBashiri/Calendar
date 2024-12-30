@@ -26,7 +26,8 @@ object CalendarContract {
             category = ""
         ),
         val isLoading: Boolean = false,
-        val error: String? = null
+        val error: String? = null,
+        val selectedDate: LocalDate? = null
     ) : UiState
 
     sealed interface Intent : UiIntent {
@@ -34,6 +35,8 @@ object CalendarContract {
         data class AddEvent(val event: CalendarEventModel) : Intent
         data class UpdateEventForEditing(val event: CalendarEventModel) : Intent
         data object RefreshEvents : Intent
+        data class FetchHolidays(val year: Int) : Intent
+        data class SelectDate(val date: LocalDate) : Intent
     }
 
     sealed interface Effect : UiEffect {

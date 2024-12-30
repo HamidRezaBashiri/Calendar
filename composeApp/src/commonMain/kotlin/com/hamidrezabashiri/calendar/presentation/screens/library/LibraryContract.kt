@@ -13,6 +13,7 @@ object LibraryContract {
     ) : UiState
 
     sealed interface Intent : UiIntent {
+        data class OpenBook(val bookId: Int) : Intent
         data object LoadBooks : Intent
         data object RefreshBooks : Intent
     }

@@ -38,6 +38,10 @@ kotlin {
 
             implementation(libs.ktor.client.okhttp)
 
+            // pdf viewer 
+            implementation(libs.pdf.viewer)
+
+
         }
         commonMain.dependencies {
             implementation(compose.runtime)

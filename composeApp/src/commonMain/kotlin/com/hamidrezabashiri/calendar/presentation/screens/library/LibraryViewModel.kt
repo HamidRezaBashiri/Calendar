@@ -48,10 +48,13 @@ class LibraryViewModel : BaseViewModel<LibraryContract.State, LibraryContract.In
     override fun handleIntent(intent: LibraryContract.Intent) {
         when (intent) {
             is LibraryContract.Intent.LoadBooks -> loadBooks()
-            LibraryContract.Intent.RefreshBooks -> loadBooks()
+            is LibraryContract.Intent.RefreshBooks -> loadBooks()
+            is LibraryContract.Intent.OpenBook -> handleOpenBook(intent.bookId)
         }
     }
-
+    private fun handleOpenBook(bookId: Int) {
+        emitEffect(LibraryContract.Effect.NavigateToBookReader(bookId.toString()))
+    }
     private fun loadBooks() {
         viewModelScope.launch {
             isLoading = true

@@ -14,13 +14,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.CurrentScreen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import com.hamidrezabashiri.calendar.di.ViewModelProvider
 import com.hamidrezabashiri.calendar.domain.model.BookModel
 import com.hamidrezabashiri.calendar.presentation.screens.base.BaseScreen
+import com.hamidrezabashiri.calendar.presentation.screens.pdf.BookReaderScreen
+import com.hamidrezabashiri.calendar.presentation.screens.pdf.PdfViewer
 
 @Composable
 fun LibraryScreen() {
     val viewModel = ViewModelProvider.provideLibraryViewModel()
+    val navigator = LocalNavigator.currentOrThrow
 
     BaseScreen(
         viewModel = viewModel,
@@ -29,6 +37,9 @@ fun LibraryScreen() {
                 is LibraryContract.Effect.NavigateToBookReader -> {
                     // Handle navigation
                     println("Navigating to book reader for book ${effect.bookId}")
+
+                    navigator.parent?.push(BookReaderScreen(effect.bookId.toInt()))
+
                 }
                 is LibraryContract.Effect.ShowError -> {
                     // Show error (implement your error handling UI)
@@ -40,7 +51,7 @@ fun LibraryScreen() {
         LibraryContent(
             state = state,
             onBookClick = { bookId ->
-//                onIntent(LibraryContract.Intent.OpenBook(bookId))
+                onIntent(LibraryContract.Intent.OpenBook(bookId))
             },
             onRefresh = {
                 onIntent(LibraryContract.Intent.RefreshBooks)
@@ -80,6 +91,7 @@ private fun LibraryContent(
                     books = state.books,
                     onBookClick = onBookClick
                 )
+//                PdfViewer("https://css4.pub/2015/textbook/somatosensory.pdf")
             }
         }
     }
