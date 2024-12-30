@@ -6,13 +6,18 @@ import com.hamidrezabashiri.calendar.domain.usecase.CalendarUseCases
 import com.hamidrezabashiri.calendar.presentation.screens.base.BaseViewModel
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 
 class CalendarViewModel(
     private val calendarUseCases: CalendarUseCases
 ) : BaseViewModel<CalendarContract.State, CalendarContract.Intent, CalendarContract.Effect>() {
+
+    private var currentMonthOffset = 0
+
 
     // Backing fields for state
     private var events = mutableListOf<CalendarEventModel>()
@@ -79,6 +84,15 @@ class CalendarViewModel(
             is CalendarContract.Intent.AddEvent -> addEvent(intent.event)
             is CalendarContract.Intent.RefreshEvents -> loadEvents(selectedDate)
             is CalendarContract.Intent.UpdateEventForEditing -> updateEvent(intent.event)
+            is CalendarContract.Intent.UpdateMonthOffset -> {
+                currentMonthOffset = intent.offset
+                val newDate = Clock.System.now()
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                    .date
+                    .plus(DatePeriod(months = intent.offset))
+                selectedDate = newDate
+                loadEvents(newDate)
+            }
         }
     }
 

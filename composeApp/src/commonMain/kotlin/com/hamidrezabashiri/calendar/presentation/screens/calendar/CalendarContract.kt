@@ -27,7 +27,8 @@ object CalendarContract {
         ),
         val isLoading: Boolean = false,
         val error: String? = null,
-        val selectedDate: LocalDate? = null
+        val selectedDate: LocalDate? = null,
+        val currentMonthOffset: Int = 0
     ) : UiState
 
     sealed interface Intent : UiIntent {
@@ -37,6 +38,7 @@ object CalendarContract {
         data object RefreshEvents : Intent
         data class FetchHolidays(val year: Int) : Intent
         data class SelectDate(val date: LocalDate) : Intent
+        data class UpdateMonthOffset(val offset: Int) : Intent
     }
 
     sealed interface Effect : UiEffect {

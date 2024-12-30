@@ -153,9 +153,9 @@ private fun CalendarContent(
         scope.launch {  // Use a coroutine for heavy work
             val monthOffset = pagerState.currentPage - INITIAL_PAGE_INDEX
             val newDate = currentDate.plus(DatePeriod(months = monthOffset))
-            
-            onIntent(CalendarContract.Intent.LoadEvents(newDate))
-            
+            onIntent(CalendarContract.Intent.UpdateMonthOffset(monthOffset))
+//            onIntent(CalendarContract.Intent.LoadEvents(newDate))
+
             if (newDate.year != currentDate.year) {
                 onIntent(CalendarContract.Intent.FetchHolidays(newDate.year))
             }
