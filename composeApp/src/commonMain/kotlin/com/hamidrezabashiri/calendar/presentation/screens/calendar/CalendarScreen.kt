@@ -47,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -183,99 +184,110 @@ private fun CalendarContent(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Top  // This ensures content starts from top
     ) {
-        MyHorizontalCalendarView(
-            startDate = currentDate,
-            beyondBoundsPageCount = 0,
-            pagerState = pagerState,
-            modifier = Modifier
-                .background(Color.White.copy(0.05f))
-                .fillMaxWidth()
-                .wrapContentHeight(align = Alignment.Top)
-                .animateContentSize()// Ensure alignment to the top
-            ,
+        Card(
+            modifier = Modifier.padding(8.dp)
+                .background(Color.Transparent)
+                .fillMaxWidth(),
+            elevation = 4.dp,
+            shape = RoundedCornerShape(16.dp),
+            backgroundColor = colors.surface,
+            border = BorderStroke(1.dp, colors.onSurface.copy(alpha = 0.12f))
+        ){
 
-            calendarView = { monthOffset ->
+            MyHorizontalCalendarView(
+                startDate = currentDate,
+                beyondBoundsPageCount = 0,
+                pagerState = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight(align = Alignment.Top)
+                    .animateContentSize()
+                    .padding(bottom = 8.dp)
+                ,
 
-                CalendarView(modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalArrangement = Arrangement.Top,
-                    day = { dayState ->
-                        val indicators = EventMapper.mapEventsToIndicators(state.events, dayState.date)
+                calendarView = { monthOffset ->
 
-                        CustomCalendarDay(
-                            state = dayState,
-                            isSelected = state.selectedDate == dayState.date,
-                            eventIndicators = indicators,
-                            onDateSelected = { date ->
-                                onIntent(CalendarContract.Intent.SelectDate(date))
-                            }
-                        )
-                    }, config = rememberCalendarState(
-                        startDate = currentDate, monthOffset = monthOffset
-                    ),
-                    header = { month, year ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth()
-                                .padding(top = 16.dp, bottom = 26.dp )
-                                .padding(horizontal = 16.dp),
+                    CalendarView(modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalArrangement = Arrangement.Top,
+                        day = { dayState ->
+                            val indicators = EventMapper.mapEventsToIndicators(state.events, dayState.date)
 
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.size(36.dp).border(
-                                    2.dp,
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = colors.onSurface.copy(0.1f)
-                                ).clickable {
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                                    }
-                                },
+                            CustomCalendarDay(
+                                state = dayState,
+                                isSelected = state.selectedDate == dayState.date,
+                                eventIndicators = indicators,
+                                onDateSelected = { date ->
+                                    onIntent(CalendarContract.Intent.SelectDate(date))
+                                }
+                            )
+                        }, config = rememberCalendarState(
+                            startDate = currentDate, monthOffset = monthOffset
+                        ),
+                        header = { month, year ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(top = 16.dp, bottom = 26.dp )
+                                    .padding(horizontal = 16.dp),
+
+                                horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                    contentDescription = "Previous month",
-                                    tint = colors.onSurface,
-                                    modifier = Modifier.size(24.dp) // Larger icon size
-                                )
-                            }
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.size(36.dp).border(
+                                        2.dp,
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = colors.onSurface.copy(0.1f)
+                                    ).clickable {
+                                        scope.launch {
+                                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                        }
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                        contentDescription = "Previous month",
+                                        tint = colors.onSurface,
+                                        modifier = Modifier.size(24.dp) // Larger icon size
+                                    )
+                                }
 
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(text = "$month",
-                                    style = MaterialTheme.typography.h6,
-                                    color = colors.onSurface
-                                )
-                                Text(
-                                    text = "$year",
-                                    style = MaterialTheme.typography.subtitle1,
-                                    color = colors.onSurface.copy(0.5f)
-                                )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = "$month",
+                                        style = MaterialTheme.typography.h6,
+                                        color = colors.onSurface
+                                    )
+                                    Text(
+                                        text = "$year",
+                                        style = MaterialTheme.typography.subtitle1,
+                                        color = colors.onSurface.copy(0.5f)
+                                    )
+
+                                }
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.size(36.dp).border(
+                                        2.dp,
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = colors.onSurface.copy(0.1f)
+                                    ).clickable {
+                                        scope.launch {
+                                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                        }
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = "Next month",
+                                        tint = colors.onSurface,
+                                        modifier = Modifier.size(24.dp) // Larger icon size
+                                    )
+                                }
 
                             }
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.size(36.dp).border(
-                                    2.dp,
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = colors.onSurface.copy(0.1f)
-                                ).clickable {
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                    }
-                                },
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                    contentDescription = "Next month",
-                                    tint = colors.onSurface,
-                                    modifier = Modifier.size(24.dp) // Larger icon size
-                                )
-                            }
-
-                        }
-                    })
-            })
+                        })
+                })
+        }
 
         LazyColumn(
             modifier = Modifier.fillMaxWidth().weight(1f)
@@ -305,6 +317,9 @@ private fun CalendarContent(
                 else -> {
                     items(state.events) { event ->
                         EventItem(event = event, onClick = { onEventClick(event.id) })
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(120.dp))
                     }
                 }
             }
@@ -426,15 +441,14 @@ private fun EventItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(8.dp)
             .clickable(onClick = onClick)
-            .padding(8.dp),
-        elevation = 4.dp,
+            ,
+        elevation = 3.dp,
         shape = RoundedCornerShape(16.dp),
         backgroundColor = colors.surface,
         border = BorderStroke(1.dp, colors.onSurface.copy(alpha = 0.12f))
-    )
-
-    {
+    ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {

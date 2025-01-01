@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
@@ -43,19 +44,18 @@ class TabNavigationScreen : Screen {
 @Composable
 fun TabNavigationContent() {
     TabNavigator(CalendarTab()) { // Explicitly pass the default tab
-        Scaffold(
-            bottomBar = {
+        Scaffold { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                CurrentTab()
+
                 MultiPlatformBottomNavBar(
+                    modifier = Modifier.align(Alignment.BottomCenter),
                     tabs = listOf(
                         LibraryTab(),
                         CalendarTab(),
                         SettingsTab()
                     )
                 )
-            }
-        ) { paddingValues ->
-            Box(modifier = Modifier.padding(paddingValues)) {
-                CurrentTab()
             }
         }
     }
