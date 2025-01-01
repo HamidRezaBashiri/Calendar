@@ -3,6 +3,7 @@ package com.hamidrezabashiri.calendar.presentation.screens.calendar
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -59,6 +61,8 @@ import com.hamidrezabashiri.calendar.presentation.screens.addEvent.EventDetailsF
 import com.hamidrezabashiri.calendar.presentation.screens.base.BaseScreen
 import com.hamidrezabashiri.calendar.util.CalendarConstants.INITIAL_PAGE_INDEX
 import com.hamidrezabashiri.calendar.util.CalendarConstants.MAX_PAGES
+import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.charsets.name
 import io.wojciechosak.calendar.config.DayState
 import io.wojciechosak.calendar.config.rememberCalendarState
 import io.wojciechosak.calendar.view.CalendarView
@@ -362,8 +366,8 @@ fun DayNumber(
             .clip(RoundedCornerShape(32))
             .background(
                 when {
-                    isSelected -> MaterialTheme.colors.primary
-                    isToday -> MaterialTheme.colors.primary.copy(alpha = 0.2f)
+                    isSelected -> colors.primary
+                    isToday -> colors.primary.copy(alpha = 0.2f)
                     else -> Color.Transparent
                 }
             ),
@@ -373,9 +377,9 @@ fun DayNumber(
             text = date.dayOfMonth.toString(),
             color = when {
                 isSelected -> Color.White
-                isToday -> MaterialTheme.colors.primary
-                isOutOfBounds -> MaterialTheme.colors.onSurface.copy(alpha = 0.5f)
-                else -> MaterialTheme.colors.onSurface
+                isToday -> colors.primary
+                isOutOfBounds -> colors.onSurface.copy(alpha = 0.5f)
+                else -> colors.onSurface
             },
             style = MaterialTheme.typography.body1.copy(
                 fontWeight = if (isSelected || isToday) FontWeight.Medium else FontWeight.Normal
@@ -413,17 +417,79 @@ fun EventIndicators(
 private fun EventItem(
     event: CalendarEventModel, onClick: () -> Unit
 ) {
+    val formattedDate = "${event.startDate.dayOfMonth} ${event.startDate.month.name.take(3)}"
+    val uriHandler = LocalUriHandler.current
+    val searchQuery = "${event.title} ${event.startDate.year} Tajikistan"
+//    val encodedQuery = URLEncoder.encode(searchQuery, Charsets.UTF_8.toString())
+    val searchUrl = "https://www.google.com/search?q=$searchQuery"
+
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(8.dp),
-        elevation = 4.dp
-    ) {
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(8.dp),
+        elevation = 4.dp,
+        shape = RoundedCornerShape(16.dp),
+        backgroundColor = colors.surface,
+        border = BorderStroke(1.dp, colors.onSurface.copy(alpha = 0.12f))
+    )
+
+    {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(text = event.title)
-            Text(text = "Date: ${event.startDate}")
-            Text(text = event.category)
-            Text(text = event.description)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // Event indicator dot
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .size(10.dp)
+                        .border(2.dp,  when(event.category) {
+                            "PUBLIC_HOLIDAY" -> EventIndicator.PUBLIC_HOLIDAY.color
+                            "OBSERVANCE" -> EventIndicator.OBSERVANCE.color
+                            "SEASON" -> EventIndicator.SEASON.color
+                            else -> colors.onSurface.copy(alpha = 0.3f)
+                        }, CircleShape)
+
+                )
+
+                Text(
+                    text = formattedDate,
+                    style = MaterialTheme.typography.body2,
+                    color = colors.onSurface.copy(alpha = 0.6f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = event.title,
+                style = MaterialTheme.typography.h6,
+                color = colors.onSurface
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = event.category,
+                style = MaterialTheme.typography.caption,
+                color = colors.onSurface.copy(alpha = 0.6f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+//            Text(
+//                text = event.description,
+//                style = MaterialTheme.typography.body1,
+//                color = colors.onSurface.copy(alpha = 0.8f)
+//            )
+//            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Search More ➞",
+                style = MaterialTheme.typography.button,
+                color = colors.primary,
+                modifier = Modifier
+                    .clickable { uriHandler.openUri(searchUrl) }
+                    .fillMaxWidth(),
+                textAlign = TextAlign.End
+            )
         }
     }
 }
