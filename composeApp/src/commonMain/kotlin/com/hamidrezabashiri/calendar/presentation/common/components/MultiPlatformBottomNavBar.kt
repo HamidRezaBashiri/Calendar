@@ -145,7 +145,7 @@ fun MultiPlatformBottomNavBar(
     // Calculate Y offset with selection bounce effect
     val currentY = remember(selectionAnimationProgress.value, animationProgress.value) {
         val baseOffset = -120f  // Base floating height
-        val selectionBounce = 20f // How much it bounces on selection
+        val selectionBounce = 0f // How much it bounces on selection
 
         // Selection bounce effect (down-then-up)
         val bounceOffset = when {

@@ -1,22 +1,32 @@
 package com.hamidrezabashiri.calendar.presentation.screens.calendar
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Card
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
@@ -38,9 +48,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.hamidrezabashiri.calendar.di.ViewModelProvider
 import com.hamidrezabashiri.calendar.domain.model.CalendarEventModel
+import com.hamidrezabashiri.calendar.presentation.common.components.EventIndicator
+import com.hamidrezabashiri.calendar.presentation.common.components.EventMapper
+import com.hamidrezabashiri.calendar.presentation.common.components.MyHorizontalCalendarView
 import com.hamidrezabashiri.calendar.presentation.screens.addEvent.EventDetailsForm
 import com.hamidrezabashiri.calendar.presentation.screens.base.BaseScreen
 import com.hamidrezabashiri.calendar.util.CalendarConstants.INITIAL_PAGE_INDEX
@@ -79,7 +93,8 @@ fun CalendarScreen() {
             }
         }
     }) { state, onIntent ->
-        Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize() ,contentAlignment = Alignment.TopStart // Ensure content aligns to the top
+            ,) {
             CalendarContent(
                 state = state,
                 onDateSelect = { date -> },
@@ -106,8 +121,7 @@ fun CalendarScreen() {
 //            )
 
             if (showBottomSheet) {
-                Box(
-                    modifier = Modifier
+                Box(modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black.copy(alpha = 0.5f))
                         .clickable(onClick = {
@@ -154,7 +168,6 @@ private fun CalendarContent(
             val monthOffset = pagerState.currentPage - INITIAL_PAGE_INDEX
             val newDate = currentDate.plus(DatePeriod(months = monthOffset))
             onIntent(CalendarContract.Intent.UpdateMonthOffset(monthOffset))
-//            onIntent(CalendarContract.Intent.LoadEvents(newDate))
 
             if (newDate.year != currentDate.year) {
                 onIntent(CalendarContract.Intent.FetchHolidays(newDate.year))
@@ -163,38 +176,46 @@ private fun CalendarContent(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Top  // This ensures content starts from top
     ) {
-        Box(
-            modifier = Modifier.fillMaxWidth().weight(1f).wrapContentHeight()
+        MyHorizontalCalendarView(
+            startDate = currentDate,
+            beyondBoundsPageCount = 0,
+            pagerState = pagerState,
+            modifier = Modifier
                 .background(Color.White.copy(0.05f))
-        ) {
-            HorizontalCalendarView(startDate = currentDate,
-                pagerState = pagerState,
-                modifier = Modifier.align(Alignment.TopCenter).background(Color.White.copy(0.05f))
-                    .fillMaxSize().animateContentSize().wrapContentHeight(),
-                calendarView = { monthOffset ->
+                .fillMaxWidth()
+                .wrapContentHeight(align = Alignment.Top)
+                .animateContentSize()// Ensure alignment to the top
+            ,
 
-                    CalendarView(modifier = Modifier.fillMaxSize(), day = { dayState ->
+            calendarView = { monthOffset ->
+
+                CalendarView(modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalArrangement = Arrangement.Top,
+                    day = { dayState ->
+                        val indicators = EventMapper.mapEventsToIndicators(state.events, dayState.date)
+
                         CustomCalendarDay(
                             state = dayState,
-                            selectedDate = state.selectedDate,
-                            events = state.events,
+                            isSelected = state.selectedDate == dayState.date,
+                            eventIndicators = indicators,
                             onDateSelected = { date ->
                                 onIntent(CalendarContract.Intent.SelectDate(date))
                             }
                         )
                     }, config = rememberCalendarState(
                         startDate = currentDate, monthOffset = monthOffset
-                    ), header = { month, year ->
-
-                        val scope = rememberCoroutineScope()
-
+                    ),
+                    header = { month, year ->
                         Row(
                             modifier = Modifier.fillMaxWidth()
-                                .padding( 16.dp),
+                                .padding(top = 16.dp, bottom = 26.dp )
+                                .padding(horizontal = 16.dp),
+
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -250,40 +271,37 @@ private fun CalendarContent(
 
                         }
                     })
-                })
-        }
+            })
 
-        Box(
+        LazyColumn(
             modifier = Modifier.fillMaxWidth().weight(1f)
         ) {
             when {
                 state.isLoading -> {
-                    CircularProgressIndicator(
-//                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-                }
-
-                state.error != null -> {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text("Error: ${state.error}")
-                        Text("Tap to retry", modifier = Modifier.clickable { onRefresh() })
+                    item {
+                        CircularProgressIndicator()
                     }
                 }
-
-                state.events.isEmpty() -> {
-                    Text(
-                        "No events for selected date",
-//                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
+                state.error != null -> {
+                    item {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("Error: ${state.error}")
+                            Text("Tap to retry", modifier = Modifier.clickable { onRefresh() })
+                        }
+                    }
                 }
-
+                state.events.isEmpty() -> {
+                    item {
+                        Text("No events for selected date")
+                    }
+                }
                 else -> {
-                    EventsList(
-                        events = state.events, onEventClick = onEventClick
-                    )
+                    items(state.events) { event ->
+                        EventItem(event = event, onClick = { onEventClick(event.id) })
+                    }
                 }
             }
         }
@@ -294,82 +312,102 @@ private fun CalendarContent(
 @Composable
 fun CustomCalendarDay(
     state: DayState,
-    selectedDate: LocalDate?,
-    events: List<CalendarEventModel>,
-    onDateSelected: (LocalDate) -> Unit
+    isSelected: Boolean,
+    eventIndicators: List<EventIndicator>,
+    onDateSelected: (LocalDate) -> Unit,
+    modifier: Modifier = Modifier
+
 ) {
-    var isInteractionEnabled by remember { mutableStateOf(true) }
+
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-    val hasEvents = events.any { it.startDate == state.date }
 
     Box(
-        modifier = Modifier
-            .size(46.dp)
-            .clip(CircleShape)
+        modifier = modifier.fillMaxSize()
             .clickable(
-                enabled = isInteractionEnabled,
-                onClick = {
-                    isInteractionEnabled = false
-                    onDateSelected(state.date)
-                }
-            )
-            .background(
-                when {
-                    selectedDate == state.date -> colors.primary
-                    state.date == today -> colors.primary.copy(alpha = 0.2f)
-                    else -> Color.Transparent
-                }
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,  // This removes the ripple effect
+                onClick = { onDateSelected(state.date) }
             )
             .padding(2.dp),
         contentAlignment = Alignment.Center
-    ) {
-        Column(
+    ) {        Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = state.date.dayOfMonth.toString(),
-                color = when {
-                    selectedDate == state.date -> Color.White
-                    state.date == today -> colors.primary
-                    state.isForNextMonth || state.isForPreviousMonth -> 
-                        colors.onSurface.copy(alpha = 0.5f)
-                    else -> colors.onSurface
-                },
-                style = MaterialTheme.typography.body1.copy(
-                    fontWeight = when {
-                        selectedDate == state.date -> FontWeight.Medium
-                        state.date == today -> FontWeight.Medium
-                        else -> FontWeight.Normal
-                    }
-                )
-            )
-            
-            if (hasEvents) {
-                Box(
-                    modifier = Modifier
-                        .size(4.dp)
-                        .clip(CircleShape)
-                        .background(Color.Green.copy(alpha = 0.8f))
-                )
-            }
+
+        DayNumber(
+            date = state.date,
+            isSelected = isSelected,
+            isToday = state.date == today,
+            isOutOfBounds = state.isForNextMonth || state.isForPreviousMonth
+        )
+
+        EventIndicators(indicators = eventIndicators)
+
         }
     }
 }
-
 
 @Composable
-private fun EventsList(
-    events: List<CalendarEventModel>, onEventClick: (String) -> Unit
+fun DayNumber(
+    date: LocalDate,
+    isSelected: Boolean,
+    isToday: Boolean,
+    isOutOfBounds: Boolean,
+    modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)
+    Box(
+        modifier = modifier
+            .size(32.dp)
+            .clip(RoundedCornerShape(32))
+            .background(
+                when {
+                    isSelected -> MaterialTheme.colors.primary
+                    isToday -> MaterialTheme.colors.primary.copy(alpha = 0.2f)
+                    else -> Color.Transparent
+                }
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        events.forEach { event ->
-            EventItem(event = event, onClick = { onEventClick(event.id) })
+        Text(
+            text = date.dayOfMonth.toString(),
+            color = when {
+                isSelected -> Color.White
+                isToday -> MaterialTheme.colors.primary
+                isOutOfBounds -> MaterialTheme.colors.onSurface.copy(alpha = 0.5f)
+                else -> MaterialTheme.colors.onSurface
+            },
+            style = MaterialTheme.typography.body1.copy(
+                fontWeight = if (isSelected || isToday) FontWeight.Medium else FontWeight.Normal
+            ),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+@Composable
+fun EventIndicators(
+    indicators: List<EventIndicator>,
+    modifier: Modifier = Modifier
+) {
+    if (indicators.isEmpty()) {
+        Spacer(modifier = Modifier.size(5.dp))
+        return
+    }
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = modifier.padding(top = 2.dp)
+    ) {
+        indicators.forEach { indicator ->
+            Box(
+                modifier = Modifier
+                    .size(5.dp)
+                    .border(1.dp, indicator.color, CircleShape)
+            )
         }
     }
 }
+
 
 @Composable
 private fun EventItem(
