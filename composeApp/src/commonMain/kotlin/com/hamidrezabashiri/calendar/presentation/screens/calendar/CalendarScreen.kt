@@ -53,6 +53,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.hamidrezabashiri.calendar.di.ViewModelProvider
 import com.hamidrezabashiri.calendar.domain.model.CalendarEventModel
 import com.hamidrezabashiri.calendar.presentation.common.components.EventIndicator
@@ -181,13 +182,14 @@ private fun CalendarContent(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().background(Color.Transparent),
         verticalArrangement = Arrangement.Top  // This ensures content starts from top
     ) {
         Card(
-            modifier = Modifier.padding(8.dp)
+            modifier = Modifier.padding(4.dp)
                 .background(Color.Transparent)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+              ,
             elevation = 4.dp,
             shape = RoundedCornerShape(16.dp),
             backgroundColor = colors.surface,
@@ -285,6 +287,14 @@ private fun CalendarContent(
                                 }
 
                             }
+                        },
+                        dayOfWeekLabel = { dayOfWeek ->
+                            Text(dayOfWeek.name.substring(IntRange(0, 2)),
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                                color = colors.onSurface
+                            )
                         })
                 })
         }
@@ -444,7 +454,7 @@ private fun EventItem(
             .padding(8.dp)
             .clickable(onClick = onClick)
             ,
-        elevation = 3.dp,
+        elevation = 0.dp,
         shape = RoundedCornerShape(16.dp),
         backgroundColor = colors.surface,
         border = BorderStroke(1.dp, colors.onSurface.copy(alpha = 0.12f))

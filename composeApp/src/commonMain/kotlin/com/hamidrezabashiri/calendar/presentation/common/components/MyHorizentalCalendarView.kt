@@ -1,17 +1,23 @@
 package com.hamidrezabashiri.calendar.presentation.common.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.hamidrezabashiri.calendar.util.CalendarConstants.INITIAL_PAGE_INDEX
 import com.hamidrezabashiri.calendar.util.CalendarConstants.MAX_PAGES
 import io.wojciechosak.calendar.animation.CalendarAnimator
@@ -57,6 +63,7 @@ fun MyHorizontalCalendarView(
                 startDate = startDate,
                 monthOffset = it,
             ),
+
         )
     },
 ) {
