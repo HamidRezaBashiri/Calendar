@@ -37,8 +37,22 @@ class BookReaderScreen (private val bookId: Int) : Screen {
                 Icon(Icons.Default.ArrowBack, "Back")
             }
 
-            // PDF Viewer
-            PdfViewer("https://css4.pub/2015/textbook/somatosensory.pdf")
+            //if id was one use url 1 and if it was 2 use url 2
+            if (bookId == 1) {
+                PdfViewer(
+                    filePath = "https://css4.pub/2015/textbook/somatosensory.pdf",
+                    title = "Book 1",
+                    modifier = Modifier.fillMaxSize(),
+                    onBackPressed = { navigator.pop() }
+                )
+            } else if (bookId == 2) {
+                PdfViewer(
+                    filePath = "https://css4.pub/2015/textbook/somatosensory.pdf",
+                    title = "Book 2",
+                    modifier = Modifier.fillMaxSize(),
+                    onBackPressed = { navigator.pop() }
+                )
+            }
         }
     }
 }

@@ -12,9 +12,9 @@ actual class PdfViewerWrapper {
     }
 }
 
-@OptIn(ExperimentalForeignApi::class)
-@Composable
-actual fun PdfViewer(filePath: String, modifier: Modifier) {
+//@OptIn(ExperimentalForeignApi::class)
+//@Composable
+//actual fun PdfViewer(filePath: String, modifier: Modifier) {
 //    UIKitView(
 //        factory = {
 //            // Create native PDFView
@@ -34,4 +34,13 @@ actual fun PdfViewer(filePath: String, modifier: Modifier) {
 //        }
 //    )
 
+//}
+
+@Composable
+actual fun PdfViewer(
+    filePath: String,
+    title: String,
+    modifier: Modifier,
+    onBackPressed: () -> Unit
+) {
 }
